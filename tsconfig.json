@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "target": "es5",
+    "lib": ["es2015", "es2016", "dom"],
+    "outDir": "./dist",
+    "moduleResolution": "Node",
+    "module": "CommonJS",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": false,
+    "declaration": true,
+    "resolveJsonModule": true,
+    "strictNullChecks": true,
+    "importHelpers": true,
+    "skipLibCheck": true,
+    "downlevelIteration": true
+  },
+  "include": [
+    "src/*",
+  ]
+}

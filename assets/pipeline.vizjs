@@ -1,0 +1,25 @@
+# http://www.graphviz.org/content/cluster
+
+digraph G {
+    url [fillcolor=yellow, style="rounded,filled", shape=diamond]
+    "in mockList" [color=blue, shape=diamond]
+    "in okList" [color=blue, shape=diamond]
+    "in passList" [color=blue, shape=diamond]
+    "have mock" [color=blue, shape=diamond]
+    "mocked response" [fillcolor=green, style="rounded,filled", shape=oval]
+    "empty response" [fillcolor=green, style="rounded,filled", shape=oval]
+    "abort" [fillcolor=red, style="rounded,filled", shape=oval]
+    "response with 500" [fillcolor=red, style="rounded,filled", shape=oval]
+    "make real request" [fillcolor=yellow, style="rounded,filled", shape=oval]
+
+	url -> "in mockList"
+	"in mockList" -> "in okList" [label=no, color=grey]
+	"in mockList" -> "have mock" [label=yes, color=grey]
+	"have mock" -> "response with 500" [label=no, color=grey]
+	"have mock" -> "mocked response" [label=yes, color=grey]
+
+	"in okList" -> "in passList" [label=no, color=grey]
+	"in okList" -> "empty response" [label=yes, color=grey]
+	"in passList" -> "abort" [label=no, color=grey]
+	"in passList" -> "make real request" [label=yes, color=grey]
+}

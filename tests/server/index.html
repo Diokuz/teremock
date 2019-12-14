@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang='ru'>
+  <head>
+    <meta charset='utf-8'>
+    <style>
+      html, body {
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        justify-content: center;
+        align-items: center;
+        background: #eee;
+      }
+      .wrap {
+        display: flex;
+        flex-direction: column;
+      }
+      .suggest {
+        margin: 8px 0 16px;
+        color: #777;
+      }
+      input {
+        font-size: 40px;
+        padding: 10px 24px;
+        background: #fff;
+        border: 0;
+        box-shadow: 0 0 1px #aaa;
+      }
+      input:focus {
+        outline: none;
+      }
+    </style>
+
+    <title>Puppeteer Request Mocker // Test page</title>
+  </head>
+
+  <body>
+    <div class='wrap'>
+      <div class='suggest'>Start typing 'abc' and wait for GET-requests</div>
+      <input type='text' id='input' autofocus placeholder="GET" />
+      <div class='suggest' id="suggest">&nbsp;</div>
+
+      <div class='suggest'>Start typing 'abc' and wait for POST-requests</div>
+      <input type='text' id='input-post' placeholder="POST" />
+      <div class='suggest' id="suggest-post">&nbsp;</div>
+
+      <div class='suggest'>Start typing 'abc' and wait for CORS-requests</div>
+      <input type='text' id='input-cors' placeholder="CORS" />
+      <div class='suggest' id="suggest-cors">&nbsp;</div>
+    </div>
+
+    <script>
+      const suggest = document.querySelector('#suggest')
+      const suggestPost = document.querySelector('#suggest-post')
+      const suggestCors = document.querySelector('#suggest-cors')
+
+      document.querySelector('#input').addEventListener('keyup', (e) => {
+        const query = e.target.value
+
+        fetch(`/api?q=${query}`)
+          .then(async (re) => {
+            const j = await re.json()
+            const { status } = re
+
+            suggest.innerText = `${status} ${j.suggest}`
+          })
+      })
+
+      document.querySelector('#input-post').addEventListener('keyup', (e) => {
+        const query = e.target.value
+
+        fetch(`/api`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ q: query }),
+        })
+          .then(async (re) => {
+            const j = await re.json()
+            const { status } = re
+
+            suggestPost.innerText = `${status} ${j.suggest}`
+          })
+          .catch(j => {
+            suggestPost.innerText = `post request failed`
+          })
+      })
+
+      document.querySelector('#input-cors').addEventListener('keyup', (e) => {
+        const query = e.target.value
+
+        fetch(`http://localhost:4000/cors-api?q=${query}`, { method: 'POST' })
+          .then(async (re) => {
+            const j = await re.json()
+            const { status } = re
+
+            suggestCors.innerText = `${status} ${j.suggest}`
+          })
+          .catch(j => {
+            suggestCors.innerText = `cors request failed`
+          })
+      })
+    </script>
+  </body>
+</html>

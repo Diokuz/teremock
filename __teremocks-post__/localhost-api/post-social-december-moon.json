@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "http://localhost:3000/api",
+    "headers": {
+      "accept": "application/json",
+      "referer": "http://localhost:3000/",
+      "origin": "http://localhost:3000",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36",
+      "content-type": "application/json"
+    },
+    "postData": {
+      "q": "abcd"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "access-control-allow-origin": "*",
+      "connection": "keep-alive",
+      "content-type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "suggest": "book"
+    }
+  }
+}
