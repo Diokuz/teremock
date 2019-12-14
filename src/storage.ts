@@ -19,9 +19,9 @@ const getNames = (params) => {
 
   const dirName = pathname.replace(/\//g, '-').replace(/^-|-$/g, '')
 
-  loggerNames(`dirName=${dirName} workDir=${params.workDir}`)
+  loggerNames(`dirName=${dirName} wd=${params.wd}`)
 
-  const targetDir = path.join(params.workDir, `${hostname}${dirName ? '-' + dirName : ''}`)
+  const targetDir = path.join(params.wd, `${hostname}${dirName ? '-' + dirName : ''}`)
 
   loggerNames(`targetDir=${targetDir}`)
 

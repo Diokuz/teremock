@@ -80,7 +80,7 @@ describe('connections', () => {
     await mocker.start({
       page,
       mockList: 'localhost:3000/api',
-      namespace: '__teremocks-post__',
+      wd: '__teremocks-post__',
     })
 
     expect(fs.existsSync(mockFilePath)).toBe(false)
@@ -184,7 +184,7 @@ describe('connections', () => {
   })
 
   describe('mocker.set()', () => {
-    it('Generates mocks in extra workDir', async () => {
+    it('Generates mocks in the custom working directory', async () => {
       const mockFilePath = path.resolve(__dirname, '../__extra-mocks__/localhost-api/get-app-diet-moon.json')
 
       await page.goto('http://localhost:3000')
@@ -194,7 +194,7 @@ describe('connections', () => {
         page,
         mockList: 'localhost:3000/api',
       })
-      await mocker.set('workDir', path.resolve(process.cwd(), '__extra-mocks__'))
+      await mocker.set('wd', path.resolve(process.cwd(), '__extra-mocks__'))
 
       expect(fs.existsSync(mockFilePath)).toBe(false)
 

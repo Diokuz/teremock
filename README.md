@@ -35,9 +35,9 @@ mocker.start(options)
 All options are optional (that's why they called so).
 ```js
 const options = {
-  // Absolute path to folder where you want to store mocks
-  // process.cwd() + '/__remocks__' by default
-  workDir: __dirname,
+  // Absolute path to working directory, where you want to store mocks
+  // path.resolve(process.cwd(), '__teremocks__') by default
+  wd: __dirname,
 
   // puppeteer page
   // global.page by default

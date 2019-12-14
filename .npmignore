@@ -3,7 +3,7 @@ screenshots
 tests
 .pnp
 .pnp.js
-__remocks__
+__teremocks__
 yarn.lock
 Makefile
 .editorconfig

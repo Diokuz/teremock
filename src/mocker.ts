@@ -9,12 +9,12 @@ import debug from 'debug'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
+import isCi from 'is-ci'
 
 const logger = debug('prm')
 
 const defaultParams = {
-  rootDir: process.cwd(),
-  namespace: '__teremocks__',
+  wd: path.resolve(process.cwd(), '__teremocks__'),
   // @ts-ignore
   page: typeof page === 'undefined' ? null : page,
   queryParams: [],
@@ -35,7 +35,7 @@ const defaultParams = {
   passList: [],
   force: false,
   // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
-  ci: require('is-ci'), // Same behaviour as in Jest
+  ci: isCi, // Same behaviour as in Jest
   verbose: false,
   cacheRequests: false,
   pagesSet: new Set(), // Singleton by default
@@ -65,8 +65,7 @@ class Mocker {
 
   _getParams(userConfig) {
     const params = Object.assign({}, this.defaultParams, userConfig)
-    const { rootDir, namespace, mockList, okList } = params
-    const workDir = path.join(rootDir, namespace)
+    const { wd, mockList, okList } = params
     let resultMockList = mockList
     let resultOkList = okList
 
@@ -82,7 +81,7 @@ class Mocker {
       resultOkList = []
     }
 
-    return { ...params, workDir, mockList: resultMockList, okList: resultOkList }
+    return { ...params, wd, mockList: resultMockList, okList: resultOkList }
   }
 
   _validate() {
@@ -166,9 +165,9 @@ class Mocker {
 
     logger('Handlers created, params validated')
 
-    this._startPromise = makeDir(this.params.workDir)
+    this._startPromise = makeDir(this.params.wd)
       .then(() => {
-        logger(`Successfully created workDir ${this.params.workDir}`)
+        logger(`Successfully created working directory ${this.params.wd}`)
 
         return this.page.setRequestInterception(true)
       })

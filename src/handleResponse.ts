@@ -13,7 +13,7 @@ export default function createHandler(initialParams) {
     const params = { ...initialParams, ...extraParams }
     const {
       reqSet,
-      workDir,
+      wd,
       mockList,
       okList,
       verbose,
@@ -61,7 +61,7 @@ export default function createHandler(initialParams) {
       skipQueryParams,
       skipPostParams,
       verbose,
-      workDir,
+      wd,
     }
 
     const fn = storage.name(mock_params)
