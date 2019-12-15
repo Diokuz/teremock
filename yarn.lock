@@ -411,6 +411,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/jest@npm:^24.0.23":
+  version: 24.0.23
+  resolution: "@types/jest@npm:24.0.23"
+  dependencies:
+    jest-diff: ^24.3.0
+  checksum: 7c711387b355513dfc063d8ca62c1c379330a0281ce8147ec8e6b76bf55cf93c480c3152a12fb1829c70a93a07d8a97e47ec0a249149e31df98b890b028c42e4
+  languageName: node
+  linkType: hard
+
 "@types/node@npm:^12.12.17":
   version: 12.12.17
   resolution: "@types/node@npm:12.12.17"
@@ -2679,7 +2688,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-diff@npm:^24.9.0":
+"jest-diff@npm:^24.3.0, jest-diff@npm:^24.9.0":
   version: 24.9.0
   resolution: "jest-diff@npm:24.9.0"
   dependencies:
@@ -5129,6 +5138,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "teremock@workspace:."
   dependencies:
+    "@types/jest": ^24.0.23
     "@types/node": ^12.12.17
     "@yarnpkg/pnpify": ^2.0.0-rc.12
     body-parser: ^1.19.0

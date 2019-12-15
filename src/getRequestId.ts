@@ -5,14 +5,24 @@ import { URL } from 'url'
 // @ts-ignore
 import queryString from 'query-string'
 import { humanize } from './words-hash'
+import { Naming } from './types'
+
+type Params = {
+  url: string
+  method?: string
+  headers?: Record<string, string>
+  postData?: string
+  naming?: Naming
+  verbose?: boolean
+}
 
 /**
  * Request Id generator.
  * Accounts for request data:
  * 1. url (protocol + host + path)
- * 2. query params (filtered with queryParams and skipQueryParams)
+ * 2. query params (filtered with naming.query)
  * 3. method (get, post...) (as prefix)
- * 4. postData, if any (filtered deeply with skipPostParams)
+ * 4. postData, if any (filtered with naming.body)
  *
  * Rid does not accounts for
  * 1. Any response data, including status, body and headers
@@ -20,20 +30,21 @@ import { humanize } from './words-hash'
  *
  * Order agnostic, so, `/foo=bar&baz=1` will have the same rid as `/baz=1&foo=bar`
  */
-const getRequestId = (params) => {
+const getRequestId = (params: Params) => {
   let url = params.url
   let method = params.method || 'GET'
   let headers = params.headers
   let postData = params.postData || ''
-  let queryParams = params.queryParams || []
-  let skipPostParams = params.skipPostParams || []
-  let skipQueryParams = params.skipQueryParams || []
+  let queryWhitelist = params.naming?.query?.whitelist || []
+  let bodyBlacklist = params.naming?.body?.blacklist || []
+  let queryBlacklist = params.naming?.query?.blacklist || []
 
   const urlObj = new URL(url)
   let postObj
 
   urlObj.searchParams.sort()
 
+  // @todo remove it from here, rename postData to body
   if (postData !== '' && headers) {
     switch (headers['content-type']) {
       case 'application/json':
@@ -50,14 +61,15 @@ const getRequestId = (params) => {
   }
 
   if (postObj) {
-    skipPostParams.forEach((param) => {
+    bodyBlacklist.forEach((param: string | string[]) => {
       let currentObj = postObj
       let paramForDelete = param
 
       if (Array.isArray(paramForDelete)) {
-        const path = [...param]
+        const path: string[] = [...param]
 
         while (path.length > 1) {
+          // @ts-ignore
           currentObj = currentObj[path.shift()]
 
           if (!currentObj) {
@@ -65,7 +77,7 @@ const getRequestId = (params) => {
           }
         }
 
-        paramForDelete = path.shift()
+        paramForDelete = path.shift() as string
       }
 
       delete currentObj[paramForDelete]
@@ -75,14 +87,14 @@ const getRequestId = (params) => {
   }
 
   /**
-   * If queryParams is set, removes any searchParams from the url,
-   * which are not declared in the queryParams array
+   * If naming.query.whitelist is set, removes any searchParams from the url,
+   * which are not declared in the whitelist array
    */
-  if (queryParams.length > 0) {
+  if (queryWhitelist.length > 0) {
     // @ts-ignore
     let keys = [...urlObj.searchParams.keys()]
     for (let key of keys) {
-      if (!queryParams.includes(key)) {
+      if (!queryWhitelist.includes(key)) {
         urlObj.searchParams.delete(key)
       }
     }
@@ -90,7 +102,8 @@ const getRequestId = (params) => {
 
   // Some parameters could vary over the time, so we can exclude them from naming
   // (be carefull, use it only if it does not affect actual response body)
-  skipQueryParams.forEach((param) => urlObj.searchParams.delete(param))
+  // @ts-ignore
+  queryBlacklist.forEach((param) => urlObj.searchParams.delete(param))
   let baseStr = urlObj.toString() + postData
 
   if (params.verbose) {

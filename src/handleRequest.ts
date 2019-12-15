@@ -3,32 +3,37 @@ import debug from 'debug'
 import signale from 'signale'
 import { shouldOk, shouldNotIntercept, isPassableByDefault } from './utils'
 import * as storage from './storage'
+import { Options } from './types'
 
 const logger = debug('prm:-request')
+
+type Params = Options & {
+  reqSet: Set<any>
+  _onSetReqCache: Function
+  _onReqStarted: Function
+  _onReqsReject: Function
+  pageUrl: () => string
+}
 
 export default function createHandler(initialParams) {
   logger('Creating request handler')
 
   return function handleRequest(interceptedRequest, extraParams = {}) {
-    const params = { ...initialParams, ...extraParams }
+    const params: Params = { ...initialParams, ...extraParams }
 
     const {
       pageUrl,
       reqSet,
       wd,
-      mockList,
       okList,
       ci,
       verbose,
       cacheRequests,
       passList,
-      queryParams,
-      skipQueryParams,
-      skipPostParams,
+      naming,
       mockMiss,
       response,
       responseHeaders,
-      status,
     } = params
 
     if (responseHeaders) {
@@ -60,7 +65,7 @@ export default function createHandler(initialParams) {
     }
 
     // If url is not in mockList nor okList
-    if (shouldNotIntercept(mockList, okList, url)) {
+    if (shouldNotIntercept(params.mockList, okList, url)) {
       logger('» shouldNotIntercept')
       let isPassable
 
@@ -83,7 +88,7 @@ export default function createHandler(initialParams) {
     }
 
     // Just say OK, dont save the mock
-    if (shouldOk(mockList, okList, url)) {
+    if (shouldOk(params.mockList, okList, url)) {
       logger('» shouldOk. Skipping. Responding with 200-OK')
 
       interceptedRequest.respond({
@@ -101,9 +106,7 @@ export default function createHandler(initialParams) {
       method,
       headers,
       postData,
-      queryParams,
-      skipQueryParams,
-      skipPostParams,
+      naming,
       verbose,
       wd,
     }
@@ -151,7 +154,6 @@ export default function createHandler(initialParams) {
             ...headers,
           },
           body: typeof body === 'string' ? body : JSON.stringify(body),
-          status,
           ...response,
         })
       })

@@ -11,18 +11,7 @@ export default function createHandler(initialParams) {
 
   return function handlerResponse(interceptedResponse, extraParams = {}) {
     const params = { ...initialParams, ...extraParams }
-    const {
-      reqSet,
-      wd,
-      mockList,
-      okList,
-      verbose,
-      ci,
-      queryParams,
-      skipQueryParams,
-      skipPostParams,
-      skipResponseHeaders,
-    } = params
+    const { reqSet, wd, mockList, okList, verbose, ci, queryParams, skipResponseHeaders } = params
     const request = interceptedResponse.request()
     const postData = request.postData() || ''
     const url = request.url()
@@ -58,8 +47,6 @@ export default function createHandler(initialParams) {
       headers: requestHeaders,
       postData,
       queryParams,
-      skipQueryParams,
-      skipPostParams,
       verbose,
       wd,
     }

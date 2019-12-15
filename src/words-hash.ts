@@ -262,7 +262,11 @@ const WORDS: string[] = [
 
 const SEP = '-'
 
-export function humanize(hexdigest: string, words: number = 3): string {
+export function humanize(hexdigest: string | void, words: number = 3): string {
+  if (typeof hexdigest !== 'string') {
+    throw new Error(`hexdigest must be of type string`)
+  }
+
   // if one char changed, all words must change
   const hashed = createHash('md5')
     .update(hexdigest)

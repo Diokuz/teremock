@@ -16,86 +16,85 @@ it('Generates prefix according to method', () => {
   expect(namePatch).toBe('patch-october-leopard-owe')
 })
 
-it('skipQueryParams does not affects output name', () => {
-  const skipQueryParams = ['foo']
-  const name1 = getRequestId({ url: 'http://example.com?foo=bar&x=y', skipQueryParams })
-  const name2 = getRequestId({ url: 'http://example.com?x=y&foo=bazzzzz', skipQueryParams })
+it('params from query.blacklist does not affects output name', () => {
+  const naming = { query: { blacklist: ['foo'] } }
+  const name1 = getRequestId({ url: 'http://example.com?foo=bar&x=y', naming })
+  const name2 = getRequestId({ url: 'http://example.com?x=y&foo=bazzzzz', naming })
 
   expect(name1).toBe(name2)
 })
 
-it('queryParams does not affect output name', () => {
-  const queryParams = ['foo']
-  const name1 = getRequestId({ url: 'http://example.com?foo=bar&y=x', queryParams })
-  const name2 = getRequestId({ url: 'http://example.com?foo=bar', queryParams })
+it('params outside of query.whitelist does not affect output name', () => {
+  const naming = { query: { whitelist: ['foo'] } }
+  const name1 = getRequestId({ url: 'http://example.com?foo=bar&y=x', naming })
+  const name2 = getRequestId({ url: 'http://example.com?foo=bar', naming })
 
   expect(name1).toBe(name2)
 })
 
-it('unnecessary params bigger than 1 does not affect output name', () => {
-  const queryParams = ['foo']
-  const name1 = getRequestId({ url: 'http://example.com?foo=bar&x=y&y=x', queryParams })
-  const name2 = getRequestId({ url: 'http://example.com?foo=bar', queryParams })
+it('params out of the whitelist does not affect output name', () => {
+  const naming = { query: { whitelist: ['foo'] } }
+  const name1 = getRequestId({ url: 'http://example.com?foo=bar&x=y&y=x', naming })
+  const name2 = getRequestId({ url: 'http://example.com?foo=bar', naming })
 
   expect(name1).toBe(name2)
 })
 
-it('queryParams > 1 does not affect output name', () => {
-  const queryParams = ['foo', 'trois']
-  const name1 = getRequestId({ url: 'http://example.com?foo=bar&trois=quatre&x=y', queryParams })
-  const name2 = getRequestId({ url: 'http://example.com?trois=quatre&foo=bar', queryParams })
+it('whitelist with two params', () => {
+  const naming = { query: { whitelist: ['foo', 'trois'] } }
+  const name1 = getRequestId({ url: 'http://example.com?foo=bar&trois=quatre&x=y', naming })
+  const name2 = getRequestId({ url: 'http://example.com?trois=quatre&foo=bar', naming })
 
   expect(name1).toBe(name2)
 })
 
-it('skip params from queryParams does not affect output name', () => {
-  const queryParams = ['foo', 'trois']
-  const skipQueryParams = ['foo']
-  const name1 = getRequestId({ url: 'http://example.com?foo=bar&trois=quatre&x=y', queryParams, skipQueryParams })
-  const name2 = getRequestId({ url: 'http://example.com?trois=quatre&foo=bar', queryParams, skipQueryParams })
+it('query.blacklist and whitelist at the same time', () => {
+  const naming = { query: { blacklist: ['foo'], whitelist: ['foo', 'trois'] } }
+  const name1 = getRequestId({ url: 'http://example.com?foo=bar&trois=quatre&x=y', naming })
+  const name2 = getRequestId({ url: 'http://example.com?trois=quatre&foo=bar', naming })
 
   expect(name1).toBe(name2)
 })
 
-it('Skipped post body params for request with content-type="application/json" does not affects output name', () => {
+it('params from body.blacklist for request with content-type="application/json" does not affects output name', () => {
   const method = 'POST'
-  const skipPostParams = ['foo']
-  const headers = {"content-type": "application/json"}
+  const naming = { body: { blacklist: ['foo'] } }
+  const headers = { 'content-type': 'application/json' }
   const name1 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
     postData: JSON.stringify({ foo: 'bar', x: 2 }),
-    skipPostParams
+    naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
     postData: JSON.stringify({ foo: 'bazzzz', x: 2 }),
-    skipPostParams
+    naming
   })
 
   expect(name1).toBe(name2)
 })
 
 it('Skipped post body params for request with content-type="application/x-www-form-urlencoded" does not affects output name', () => {
-  const skipPostParams = ['foo']
-  const headers = {"content-type": "application/x-www-form-urlencoded"}
+  const naming = { body: { blacklist: ['foo'] } }
+  const headers = { 'content-type': 'application/x-www-form-urlencoded' }
 
   const name1 = getRequestId({
     url: 'http://example.com',
     method: 'POST',
     headers,
     postData: "foo=bar&x=2",
-    skipPostParams
+    naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method: 'POST',
     headers,
     postData: "foo=bazzzz&x=2",
-    skipPostParams
+    naming
   })
 
   expect(name1).toBe(name2)
@@ -103,21 +102,21 @@ it('Skipped post body params for request with content-type="application/x-www-fo
 
 it('Skipped post body params for request without content-type affects output name', () => {
   const method = 'POST'
-  const skipPostParams = ['foo']
+  const naming = { body: { blacklist: ['foo'] } }
   const headers = {}
   const name1 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
     postData: "foo=bar&x=2",
-    skipPostParams
+    naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
     postData: "foo=bazzzz&x=2",
-    skipPostParams
+    naming
   })
 
   expect(name1).toBe(name2)
@@ -125,21 +124,21 @@ it('Skipped post body params for request without content-type affects output nam
 
 it('Skipped post body params for request with not supported content-type affects output name', () => {
   const method = 'POST'
-  const skipPostParams = ['foo']
-  const headers =  {"content-type": "multipart/form-data"}
+  const naming = { body: { blacklist: ['foo'] } }
+  const headers =  { 'content-type': 'multipart/form-data' }
   const name1 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
-    postData: "foo=bar&x=2",
-    skipPostParams
+    postData: 'foo=bar&x=2',
+    naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
-    postData: "foo=bazzzz&x=2",
-    skipPostParams
+    postData: 'foo=bazzzz&x=2',
+    naming
   })
 
   expect(name1).toBe(name2)
@@ -147,33 +146,35 @@ it('Skipped post body params for request with not supported content-type affects
 
 it('Skip nested post body params', () => {
   const method = 'POST'
-  const skipPostParams = [['foo', 'bar']]
+  const naming = { body: { blacklist: [['foo', 'bar']] } }
   const headers = {"content-type": "application/json"}
   const name1 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
     postData: JSON.stringify({ foo: { bar: 1 }, baz: 2 }),
-    skipPostParams
+    naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
     postData: JSON.stringify({ foo: { bar: 2 }, baz: 2 }),
-    skipPostParams
+    naming
   })
 
   expect(name1).toBe(name2)
 })
 
 it('Nonexistent level of nested body parameters does not throw an error', () => {
+  const naming = { body: { blacklist: [['foo', 'bar', 'baz']] } }
+
   getRequestId({
     url: 'http://example.com',
     method: 'POST',
     headers:{ 'content-type': 'application/json' },
     postData: JSON.stringify({ foo: 1 }),
-    skipPostParams: [['foo', 'bar', 'baz']]
+    naming
   })
 })
 

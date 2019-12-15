@@ -6,14 +6,25 @@ import debug from 'debug'
 import signale from './logger'
 import getRequestId from './getRequestId'
 import logger from './logger'
+import { Naming } from './types'
 
 const loggerRead = debug('prm:storage:read')
 const loggerWrite = debug('prm:storage:write')
-
 const loggerNames = debug('prm:storage:names')
 
-const getNames = (params) => {
+type GetNamesParams = {
+  url: string
+  wd: string
+  naming?: Naming
+  verbose?: boolean
+  headers?: Record<string, string>
+  method?: string
+  postData?: string
+}
+
+const getNames = (params: GetNamesParams) => {
   const { hostname, pathname, protocol } = new URL(params.url)
+  const naming = params.naming || {}
 
   loggerNames(`Url parts are hostname=${hostname}, pathname=${pathname}, protocol=${protocol}`)
 
@@ -25,7 +36,7 @@ const getNames = (params) => {
 
   loggerNames(`targetDir=${targetDir}`)
 
-  const fileName = getRequestId(params)
+  const fileName = getRequestId({ ...params, naming })
 
   loggerNames(`fileName=${fileName}`)
 

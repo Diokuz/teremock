@@ -33,6 +33,7 @@ You could use `options`
 mocker.start(options)
 ```
 All options are optional (that's why they called so).
+
 ```js
 const options = {
   // Absolute path to working directory, where you want to store mocks
@@ -43,23 +44,17 @@ const options = {
   // global.page by default
   page: page,
 
-  // In some cases you could have some random GET params, which are not affect the response body
-  // but several params may be important for you (White List)
-  // [] by default
-  queryParams: ['important'],
-
-  // In some cases you could have some random GET params, which are not affects the response body
-  // but could lead to `always out of date` mocks (Black List)
-  // [] by default
-  skipQueryParams: ['randomId', 'timestamp'],
-
-  // Same as skipQueryParams but for post body params
-  // Only application/json MIME type is supported
-  skipPostParams: [
-      'randomId',
-      'timestamp',
-      ['objectParameter', 'property']
-  ],
+  // Some parameters, which are used when calculating mock filenames (see below `Mock files naming` section)
+  naming: {
+    query: {
+      blacklist: [],
+      whitelist: []
+    },
+    body: {
+      blacklist: [],
+      whitelist: []
+    },
+  }
 
   // Probably you dont want to mock some requests (e.g. cdn js files)
   // And you definitely dont want to mock your webapp requests (e.g. localhost/app.js)
@@ -113,6 +108,70 @@ const options = {
   },
 }
 ```
+
+### Mock files naming
+
+The name of mock file is consist of five parts: 1) `options.wd` 2) url directory 3) lowercased http method 4) three words 5) `.json` extension.
+
+The most important part is `4) three words`. These words are pseudorandom, and depends on a) request url (without query) b) query params c) body params.
+
+@todo examples
+
+In many cases it is important to be independent from some query and body params, which, for example, have random value. There are four different list for skipping some parameters, when calculating mock filename: whitelist and blacklist for query and body parameters. Here its typing:
+
+```ts
+type ListItem = string | string[]
+type List = ListItem[]
+```
+For example, you want to skip `timestamp` GET-parameter, `randomToken` and nested `data.wuid` POST-parameters. Then, you need to construct two lists, and set them to mocker options:
+
+```ts
+const dynamicQueryParams = [
+  'timestamp'
+]
+const dynamicBodyParams = [
+  'randomToken',
+  ['data', 'wuid']
+]
+
+mocker.start({
+  query: {
+    blacklist: dynamicQueryParams
+  },
+  body: {
+    blacklist: dynamicBodyParams
+  }
+})
+```
+Now, when you have a POST request with url and body:
+```
+http://example.com/?foo=bar&timestamp=123
+
+{
+  randomToken: 'qweasd',
+  data: {
+    alice: 'bob',
+    wuid: 32
+  }
+}
+```
+the mock filename will be exact as if it were just
+```
+http://example.com/?foo=bar
+
+{
+  data: {
+    alice: 'bob'
+  }
+}
+```
+
+It is not recommended to use `whitelist`, because you may encounting mocks filenames collision. But in some rare cases (for example, when some keys are random) `whitelist` could be usefull.
+
+It is not possible to use different lists for different urls simultaneously, but if you really need that, just create an issue!
+
+
+
 Both `mocker.start()` and `mocker.stop()` return a `Promise`.
 
 ## mocker.set()

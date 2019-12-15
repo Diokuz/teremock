@@ -3,7 +3,7 @@ import { URL } from 'url'
 const matches = (arr, str) => !!arr.find((el) => str.includes(el))
 
 // @todo tests
-const shouldNotIntercept = (mockList = [], okList = [], url = '') => {
+const shouldNotIntercept = (mockList: string[] = [], okList: string[] = [], url: string = '') => {
   const inOkList = matches(okList, url)
   const inMockList = matches(mockList, url)
   const inAnyList = inOkList || inMockList
@@ -13,7 +13,7 @@ const shouldNotIntercept = (mockList = [], okList = [], url = '') => {
   return (listsAreConfigured && !inAnyList) || (!listsAreConfigured && url.includes('localhost'))
 }
 
-const shouldOk = (mockList = [], okList = [], url = '') => {
+const shouldOk = (mockList: string[] = [], okList: string[] = [], url: string = '') => {
   const inOkList = matches(okList, url)
   const inMockList = matches(mockList, url)
 

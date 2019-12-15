@@ -1,6 +1,6 @@
 const getNames = require('../dist/storage').__getNames
 
-// url, method, postData = '', wd, skipQueryParams = [], skipPostParams = []
+// url, method, postData = '', wd, query.blacklist = [], body.blacklist = []
 
 it('Generates filename for domain without slash', () => {
   const names = getNames({
@@ -60,12 +60,20 @@ it('Generates same filenames for different skipped query params', () => {
   const names1 = getNames({
     url: 'http://example.com/foo/bar/?foo=bar&x=y',
     wd: '/diokuz/dir',
-    skipQueryParams: ['random']
+    naming: {
+      query: {
+        blacklist: ['random'],
+      },
+    },
   })
   const names2 = getNames({
     url: 'http://example.com/foo/bar/?foo=bar&x=y&random=123',
     wd: '/diokuz/dir',
-    skipQueryParams: ['random']
+    naming: {
+      query: {
+        blacklist: ['random'],
+      },
+    },
   })
 
   expect(names1.absFileName).toBe('/diokuz/dir/example.com-foo-bar/get-fruit-ark-beam')
@@ -76,7 +84,11 @@ it('Generates same filenames for different order of query params', () => {
   const names1 = getNames({
     url: 'http://example.com/foo/bar/?foo=bar&x=y',
     wd: '/diokuz/dir',
-    skipQueryParams: ['random']
+    naming: {
+      query: {
+        blacklist: ['random'],
+      },
+    },
   })
   const names2 = getNames({
     url: 'http://example.com/foo/bar/?x=y&foo=bar',
@@ -150,7 +162,11 @@ it('Generates different filenames for different JSON post bodies', () => {
 })
 
 it('Generates same filenames for different skipped FormData post bodies', () => {
-  const skipPostParams = ['foo']
+  const naming = {
+    body: {
+      blacklist: ['foo'],
+    },
+  }
 
   const headers = {"content-type": "application/x-www-form-urlencoded"}
   const names1 = getNames({
@@ -159,7 +175,7 @@ it('Generates same filenames for different skipped FormData post bodies', () => 
     headers,
     postData: "foo=bar&x=2",
     wd: '/diokuz/dir',
-    skipPostParams
+    naming,
   })
   const names2 = getNames({
     url: 'http://example.com',
@@ -167,7 +183,7 @@ it('Generates same filenames for different skipped FormData post bodies', () => 
     headers,
     postData: "foo=bazzzz&x=2",
     wd: '/diokuz/dir',
-    skipPostParams
+    naming,
   })
 
   expect(names1.absFileName).toBe('/diokuz/dir/example.com/post-lamp-echo-jupiter')
@@ -175,7 +191,11 @@ it('Generates same filenames for different skipped FormData post bodies', () => 
 })
 
 it('Generates same filenames for different skipped JSON post bodies', () => {
-  const skipPostParams = ['randomId', 'timestamp']
+  const naming = {
+    body: {
+      blacklist: ['randomId', 'timestamp'],
+    },
+  }
 
   const headers = {"content-type": "application/json"}
   const names1 = getNames({
@@ -184,7 +204,7 @@ it('Generates same filenames for different skipped JSON post bodies', () => {
     headers,
     postData: JSON.stringify({ id: 1, randomId: 2, timestamp: 123 }),
     wd: '/diokuz/dir',
-    skipPostParams
+    naming
   })
   const names2 = getNames({
     url: 'http://example.com',
@@ -192,7 +212,7 @@ it('Generates same filenames for different skipped JSON post bodies', () => {
     headers,
     postData: JSON.stringify({ id: 1, randomId: 3, timestamp: 321 }),
     wd: '/diokuz/dir',
-    skipPostParams
+    naming
   })
 
   expect(names1.absFileName).toBe('/diokuz/dir/example.com/post-equal-uniform-ice')

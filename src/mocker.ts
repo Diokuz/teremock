@@ -6,20 +6,18 @@
 import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
+import isCi from 'is-ci'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
-import isCi from 'is-ci'
+import { Options, UserOptions } from './types'
 
 const logger = debug('prm')
 
-const defaultParams = {
+const defaultParams: Options = {
   wd: path.resolve(process.cwd(), '__teremocks__'),
   // @ts-ignore
   page: typeof page === 'undefined' ? null : page,
-  queryParams: [],
-  skipQueryParams: [],
-  skipPostParams: [],
   skipResponseHeaders: [
     'date',
     'expires',
@@ -49,7 +47,7 @@ class Mocker {
   }
 
   page: any
-  defaultParams: Object
+  defaultParams: Options
   extraParams: Object
   params: any
   reqSet: Set<any>
@@ -63,25 +61,23 @@ class Mocker {
   _resolveReqs: Function
   _rejectReqs: Function
 
-  _getParams(userConfig) {
-    const params = Object.assign({}, this.defaultParams, userConfig)
-    const { wd, mockList, okList } = params
-    let resultMockList = mockList
-    let resultOkList = okList
+  _getParams(userOptions: UserOptions): Options {
+    let resultMockList: string[] = []
+    let resultOkList: string[] = []
 
-    if (typeof mockList === 'string') {
-      resultMockList = mockList.split(',')
-    } else if (mockList === null) {
-      resultMockList = []
+    if (typeof userOptions.mockList === 'string') {
+      resultMockList = userOptions.mockList.split(',')
+    } else if (Array.isArray(userOptions.mockList)) {
+      resultMockList = userOptions.mockList
     }
 
-    if (typeof okList === 'string') {
-      resultOkList = okList.split(',')
-    } else if (okList === null) {
+    if (typeof userOptions.okList === 'string') {
+      resultOkList = userOptions.okList.split(',')
+    } else if (userOptions.okList === null) {
       resultOkList = []
     }
 
-    return { ...params, wd, mockList: resultMockList, okList: resultOkList }
+    return { ...this.defaultParams, ...userOptions, mockList: resultMockList, okList: resultOkList }
   }
 
   _validate() {
@@ -105,7 +101,7 @@ class Mocker {
         this._resolveReqs = resolve
         this._rejectReqs = (...args) => {
           console.trace()
-          console.log('args', args)
+          signale.log('args', args)
           reject(...args)
         }
       })
@@ -115,10 +111,10 @@ class Mocker {
   /*
    * Starts to intercept requests
    */
-  start(userConfig) {
+  start(userOptions: UserOptions) {
     this.reset()
     this.alive = true
-    this.params = this._getParams(userConfig)
+    this.params = this._getParams(userOptions)
 
     const logParams = Object.assign({}, this.params, { page: '...' })
     logger('Mocker starts with resulting params:')
