@@ -13,7 +13,7 @@ async function sleep(time) {
   })
 }
 
-describe('connections', () => {
+describe('teremock', () => {
   let page
   let browser
   let server
@@ -390,5 +390,29 @@ describe('connections', () => {
 
     afterEach(async () => await mocker.stop())
   })
-})
 
+  describe('mocker.spy', () => {
+    it.skip('simple case', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker with void passList
+      await mocker.start({ page })
+      const spy = mocker.spy({
+        url: 'example.com',
+        query: { foo: 'bar' },
+        headers: { qwe: 'asd' },
+        status: 200
+      })
+
+      mocker.spy
+
+      // * Typing `a` → invoking cors request to `/api`, which is mocked with inline mock
+      await page.click('#input')
+      await page.keyboard.type('a')
+
+      // * Awaiting for suggest innerText, which indicates wether request was blocked
+      expect(spy.calls.length).toBe(1)
+      // expect(spy.).toBe(1)
+    })
+  })
+})

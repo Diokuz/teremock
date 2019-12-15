@@ -48,7 +48,7 @@ class Mocker {
 
   page: any
   defaultParams: Options
-  extraParams: Object
+  extraParams: UserOptions
   params: any
   reqSet: Set<any>
   cachedReqs: Map<string, any>
@@ -196,6 +196,12 @@ class Mocker {
 
   reset() {
     this.extraParams = {}
+  }
+
+  mock(pattern: string) {
+    if (pattern.startsWith('/')) {
+      //
+    }
   }
 
   /*

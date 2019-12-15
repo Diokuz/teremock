@@ -4,8 +4,8 @@ type List = ListItem[]
 
 export type Naming = {
   query?: {
-    whitelist?: List
-    blacklist?: List
+    whitelist?: string[]
+    blacklist?: string[]
   }
   body?: {
     whitelist?: List
