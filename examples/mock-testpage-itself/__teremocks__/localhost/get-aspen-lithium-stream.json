@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "http://localhost:3000/",
+    "headers": {
+      "upgrade-insecure-requests": "1",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36",
+      "sec-fetch-user": "?1"
+    },
+    "body": ""
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8",
+      "connection": "keep-alive"
+    },
+    "body": "<!DOCTYPE html>\n<html lang='ru'>\n  <head>\n    <meta charset='utf-8'>\n    <style>\n      html, body {\n        font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;\n        margin: 0;\n        display: flex;\n        width: 100%;\n        height: 100%;\n        justify-content: center;\n        align-items: center;\n        background: #eee;\n      }\n      .wrap {\n        display: flex;\n        flex-direction: column;\n      }\n      .suggest {\n        margin: 8px 0 16px;\n        color: #777;\n      }\n      input {\n        font-size: 40px;\n        padding: 10px 24px;\n        background: #fff;\n        border: 0;\n        box-shadow: 0 0 1px #aaa;\n      }\n      input:focus {\n        outline: none;\n      }\n    </style>\n\n    <title>Teremock // Form submit example</title>\n  </head>\n\n  <body>\n    <form class='wrap' method='post' action='/form-submit'>\n      <input name='firstname' type='text' autofocus placeholder=\"firstname\" />\n      <input name='lastname' type='text' placeholder=\"lastname\" />\n\n      <input id='submit' type='submit' text='submit' />\n    </form>\n  </body>\n</html>\n"
+  }
+}

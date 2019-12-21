@@ -1,0 +1,23 @@
+{
+  "request": {
+    "method": "POST",
+    "url": "http://localhost:3000/form-submit",
+    "headers": {
+      "origin": "http://localhost:3000",
+      "upgrade-insecure-requests": "1",
+      "content-type": "application/x-www-form-urlencoded",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36",
+      "sec-fetch-user": "?1",
+      "referer": "http://localhost:3000/"
+    },
+    "body": "firstname=Firstname&lastname=Lastname"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8",
+      "connection": "keep-alive"
+    },
+    "body": "Submitted with form-data: {\n  \"firstname\": \"Firstname\",\n  \"lastname\": \"Lastname\"\n}"
+  }
+}

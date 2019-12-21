@@ -1,139 +1,95 @@
 import fs from 'fs'
 import path from 'path'
-import { URL } from 'url'
 import makeDir from 'make-dir'
 import debug from 'debug'
 import signale from './logger'
-import getRequestId from './getRequestId'
-import logger from './logger'
-import { Naming } from './types'
 
-const loggerRead = debug('prm:storage:read')
-const loggerWrite = debug('prm:storage:write')
-const loggerNames = debug('prm:storage:names')
+const loggerGet = debug('teremock:storage:get')
+const loggerSet = debug('teremock:storage:set')
 
-type GetNamesParams = {
-  url: string
-  wd: string
-  naming?: Naming
-  verbose?: boolean
-  headers?: Record<string, string>
-  method?: string
-  postData?: string
+export const getFileName = ({ wd, mockId }: { wd: string; mockId: string }) => {
+  return path.resolve(wd, mockId.replace('--', path.sep) + '.json')
 }
 
-const getNames = (params: GetNamesParams) => {
-  const { hostname, pathname, protocol } = new URL(params.url)
-  const naming = params.naming || {}
-
-  loggerNames(`Url parts are hostname=${hostname}, pathname=${pathname}, protocol=${protocol}`)
-
-  const dirName = pathname.replace(/\//g, '-').replace(/^-|-$/g, '')
-
-  loggerNames(`dirName=${dirName} wd=${params.wd}`)
-
-  const targetDir = path.join(params.wd, `${hostname}${dirName ? '-' + dirName : ''}`)
-
-  loggerNames(`targetDir=${targetDir}`)
-
-  const fileName = getRequestId({ ...params, naming })
-
-  loggerNames(`fileName=${fileName}`)
-
-  const absFileName = path.join(targetDir, fileName)
-
-  loggerNames(`absFileName=${absFileName}`)
-
-  return {
-    targetDir,
-    absFileName,
-  }
-}
-
-export const write = ({ fn, body, url, ci }) => {
-  loggerWrite(`Entering storage.write with fn === ${fn}`)
-
-  const jsonFn = fn + '.json'
-  const targetDir = path.dirname(fn)
+const set = (mockId: string, { body, url, ci }, { wd }: { wd: string }) => {
+  const absFileName = getFileName({ mockId, wd })
+  loggerSet(`Entering storage.set with fn === ${mockId}`)
+  const targetDir = path.dirname(absFileName)
 
   return makeDir(targetDir).then(() => {
-    loggerWrite(`Successfully checked/created targetDir ${targetDir}`)
+    loggerSet(`Successfully checked/created targetDir ${targetDir}`)
 
     return new Promise((resolve, reject) => {
-      let fileExists = fs.existsSync(jsonFn)
+      let fileExists = fs.existsSync(absFileName)
 
       if (!fileExists) {
-        fileExists = fs.existsSync(fn)
+        fileExists = fs.existsSync(mockId)
       }
 
       if (!fileExists) {
-        loggerWrite(`File does not exists ${fn}`)
+        loggerSet(`File does not exists ${mockId}`)
 
         if (ci) {
-          loggerWrite(`Url "${url}" wasnt mocked! Rejecting and exiting storage.write.`)
+          loggerSet(`Url "${url}" wasnt mocked! Rejecting and exiting storage.set.`)
           reject(Error(`Mock cannot be saved in CI mode.`))
 
           return
         }
 
-        signale.write(`Writing mock for url "${url}"`)
-        signale.write(`to file "${jsonFn}"`)
+        signale.set(`Writing mock for url "${url}"`)
+        signale.set(`to file "${absFileName}"`)
 
-        fs.writeFile(jsonFn, body, (err) => {
+        fs.writeFile(absFileName, body, (err) => {
           if (err) {
-            signale.error(`Failed to write new file ${jsonFn}`)
+            signale.error(`Failed to write new file ${absFileName}`)
 
             reject(err)
           }
 
-          signale.success(`Successfully wrote new file ${jsonFn}`)
+          signale.success(`Successfully wrote new file ${absFileName}`)
 
-          resolve({ fn, new: true })
+          resolve({ mockId, new: true })
         })
       } else {
-        loggerWrite(`File already exists, do nothing ${fn}`)
+        loggerSet(`File already exists, do nothing ${mockId}`)
 
-        resolve({ fn, new: false })
+        resolve({ mockId, new: false })
       }
     })
   })
 }
 
-export const read = (fn) => {
-  loggerRead(`About to read file ${fn}(.json)`)
-  const jsonFn = fn + '.json'
-  let fileToRead = jsonFn
+const get = (mockId: string, { wd }: { wd: string }) => {
+  const absFileName = getFileName({ mockId, wd })
+
+  loggerGet(`about to read file ${absFileName}`)
 
   return new Promise((resolve, reject) => {
-    if (!fs.existsSync(jsonFn)) {
-      loggerRead(`json version of the mock does not exists, trying to read ${fn}`)
-      fileToRead = fn
-    }
-
     try {
-      fs.readFile(fileToRead, 'utf8', (err, data) => {
+      fs.readFile(absFileName, 'utf8', (err, data) => {
         if (err) {
           if (err.code === 'ENOENT') {
-            loggerRead(`File does not exist ${fileToRead}`)
+            loggerGet(`File does not exist ${absFileName}`)
           } else {
-            logger.error(`Fail to read the file ${fileToRead}`, err)
+            signale.error(`Fail to read the file ${absFileName}`, err)
           }
 
-          reject({ fn, err })
+          reject({ mockId, err })
         } else {
-          logger.read(`Successfully read the file ${fileToRead}`)
+          signale.get(`successfully read the file ${absFileName}`)
 
           resolve(data)
         }
       })
     } catch (err) {
-      logger.error(`Unexpected failure of file reading ${fileToRead}`, err)
+      signale.error(`unexpected failure of file reading ${absFileName}`, err)
 
-      reject({ fn, err })
+      reject({ mockId, err })
     }
   })
 }
 
-export const __getNames = getNames
-// @ts-ignore
-export const name = (...args) => getNames(...args).absFileName
+export default {
+  set,
+  get,
+}

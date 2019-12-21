@@ -1,23 +1,21 @@
-import path from 'path'
 import debug from 'debug'
 import signale from 'signale'
-import { shouldOk, shouldNotIntercept } from './utils'
-import * as storage from './storage'
+import { isCapturable } from './utils'
+import getMockId from './mock-id'
 
-const logger = debug('prm:response')
+const logger = debug('teremock:response')
 
 export default function createHandler(initialParams) {
   logger('Creating response handler')
 
   return function handlerResponse(interceptedResponse, extraParams = {}) {
     const params = { ...initialParams, ...extraParams }
-    const { reqSet, wd, mockList, okList, verbose, ci, queryParams, skipResponseHeaders } = params
+    const { storage, reqSet, wd, capture, verbose, ci, queryParams, skipResponseHeaders } = params
     const request = interceptedResponse.request()
     const postData = request.postData() || ''
     const url = request.url()
     const method = request.method()
     const requestHeaders = request.headers()
-    const resParams = { url, method, postData }
     const responseHeaders = interceptedResponse.headers()
     const responseStatus = interceptedResponse.status()
 
@@ -27,16 +25,10 @@ export default function createHandler(initialParams) {
 
     logger(`» Intercepted response with method "${method}" and url "${url}"`)
 
-    if (verbose) {
-      signale.info(`Response handling for:\n${resParams}`)
-      signale.info(`Request headers :\n${requestHeaders}`)
-      signale.info('decodeURIComponent(postData)', decodeURIComponent(postData))
-      signale.info('encodeURIComponent(postData)', encodeURIComponent(postData))
-    }
+    const dontIntercept = !isCapturable({ capture, request: { url, method } })
 
-    // If synthetic OK-response, no needs to write it to fs
-    if (shouldNotIntercept(mockList, okList, url) || shouldOk(mockList, okList, url)) {
-      logger('» shouldNotIntercept or shouldOk. Skipping.')
+    if (dontIntercept) {
+      logger(`» dontIntercept "${dontIntercept}". Skipping.`)
 
       return
     }
@@ -45,15 +37,15 @@ export default function createHandler(initialParams) {
       url,
       method,
       headers: requestHeaders,
-      postData,
+      body: postData,
       queryParams,
       verbose,
       wd,
     }
 
-    const fn = storage.name(mock_params)
+    const mockId = getMockId(mock_params)
 
-    logger(`» Preparing to write a new file (if it does not exist and it is not CI) ${fn}`)
+    logger(`» Preparing to set a new mock (if it does not exist and it is not CI) ${mockId}`)
 
     interceptedResponse
       .json()
@@ -65,22 +57,19 @@ export default function createHandler(initialParams) {
         if (typeof body === 'string') {
           logger(`« Response body starts with: ${body.substr(0, 100)}`)
         }
-        logger(`« Sending the response to storage.write`)
+        logger(`« Sending the response to storage.set`)
 
         if (ci) {
-          reqSet.delete(fn)
-          debug('prm:connections:delete')(
-            path.basename(fn),
-            Array.from(reqSet).map((f: string) => path.basename(f))
-          )
+          reqSet.delete(mockId)
+          debug('teremock:connections:delete')(mockId, Array.from(reqSet))
 
           return
         }
 
-        let postDataToWrite = postData
+        let bodyToWrite = postData
 
         try {
-          postDataToWrite = JSON.parse(postData)
+          bodyToWrite = JSON.parse(postData)
         } catch (e) {
           // pass
         }
@@ -91,39 +80,39 @@ export default function createHandler(initialParams) {
          * 2) Because it breaks mockMiss behavior
          */
         return storage
-          .write({
-            url,
-            fn,
-            body: JSON.stringify(
-              {
-                request: {
-                  method,
-                  url,
-                  headers: requestHeaders,
-                  postData: postDataToWrite,
+          .set(
+            mockId,
+            {
+              url,
+              body: JSON.stringify(
+                {
+                  request: {
+                    method,
+                    url,
+                    headers: requestHeaders,
+                    body: bodyToWrite,
+                  },
+                  response: {
+                    status: responseStatus,
+                    headers: responseHeaders,
+                    body,
+                  },
                 },
-                response: {
-                  status: responseStatus,
-                  headers: responseHeaders,
-                  body,
-                },
-              },
-              null,
-              '  '
-            ),
-            ci,
-          })
+                null,
+                '  '
+              ),
+              ci,
+            },
+            { wd: params.wd }
+          )
           .then((e: any) => {
-            logger(`« Successfully exited from storage.write for file ${e.fn}`)
+            logger(`« successfully exited from storage.set for mock ${e && e.fn}`)
 
-            reqSet.delete(e.fn)
-            debug('prm:connections:delete')(
-              path.basename(fn),
-              Array.from(reqSet).map((f: string) => path.basename(f))
-            )
+            reqSet.delete(mockId)
+            debug('teremock:connections:delete')(mockId, Array.from(reqSet))
           })
           .catch((err) => {
-            debug('prm:connections:delete')('fail', path.basename(fn), err)
+            debug('teremock:connections:delete')('fail', mockId, err)
             signale.error(`Fail to save the file because of `, err)
             params._onReqsReject('WRITEERR')
           })

@@ -4,6 +4,7 @@ import { createHash } from 'crypto'
 import { URL } from 'url'
 // @ts-ignore
 import queryString from 'query-string'
+import logger from './logger'
 import { humanize } from './words-hash'
 import { Naming } from './types'
 
@@ -11,9 +12,8 @@ type Params = {
   url: string
   method?: string
   headers?: Record<string, string>
-  postData?: string
+  body?: string
   naming?: Naming
-  verbose?: boolean
 }
 
 /**
@@ -22,11 +22,12 @@ type Params = {
  * 1. url (protocol + host + path)
  * 2. query params (filtered with naming.query)
  * 3. method (get, post...) (as prefix)
- * 4. postData, if any (filtered with naming.body)
+ * 4. body, if any (filtered with naming.body)
  *
- * Rid does not accounts for
- * 1. Any response data, including status, body and headers
- * 2. request headers (do you need that?)
+ * getRequestId does not accounts for
+ * 1. blacklisted query and body params
+ * 2. Any response data, including status, body and headers
+ * 3. request headers (do you need that?)
  *
  * Order agnostic, so, `/foo=bar&baz=1` will have the same rid as `/baz=1&foo=bar`
  */
@@ -34,35 +35,33 @@ const getRequestId = (params: Params) => {
   let url = params.url
   let method = params.method || 'GET'
   let headers = params.headers
-  let postData = params.postData || ''
+  let body = params.body || ''
   let queryWhitelist = params.naming?.query?.whitelist || []
   let bodyBlacklist = params.naming?.body?.blacklist || []
   let queryBlacklist = params.naming?.query?.blacklist || []
 
   const urlObj = new URL(url)
-  let postObj
+  let bodyObj
 
   urlObj.searchParams.sort()
 
-  // @todo remove it from here, rename postData to body
-  if (postData !== '' && headers) {
+  // @todo remove it from here, rename body to body
+  if (body !== '' && headers) {
     switch (headers['content-type']) {
       case 'application/json':
-        postObj = JSON.parse(postData)
+        bodyObj = JSON.parse(body)
         break
       default:
-        postObj = queryString.parse(postData)
+        bodyObj = queryString.parse(body)
         break
     }
   }
 
-  if (params.verbose) {
-    console.log('requestId: postObj', postObj)
-  }
+  logger.debug('requestId: bodyObj', bodyObj)
 
-  if (postObj) {
+  if (bodyObj) {
     bodyBlacklist.forEach((param: string | string[]) => {
-      let currentObj = postObj
+      let currentObj = bodyObj
       let paramForDelete = param
 
       if (Array.isArray(paramForDelete)) {
@@ -83,7 +82,7 @@ const getRequestId = (params: Params) => {
       delete currentObj[paramForDelete]
     })
 
-    postData = JSON.stringify(postObj)
+    body = JSON.stringify(bodyObj)
   }
 
   /**
@@ -104,11 +103,9 @@ const getRequestId = (params: Params) => {
   // (be carefull, use it only if it does not affect actual response body)
   // @ts-ignore
   queryBlacklist.forEach((param) => urlObj.searchParams.delete(param))
-  let baseStr = urlObj.toString() + postData
+  let baseStr = urlObj.toString() + body
 
-  if (params.verbose) {
-    console.log('requestId: baseStr, baseStr.length', baseStr, baseStr.length)
-  }
+  logger.debug('requestId: baseStr, baseStr.length', baseStr, baseStr.length)
 
   return `${method.toLowerCase()}-${humanize(baseStr, 3)}`
 }

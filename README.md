@@ -18,9 +18,11 @@ await mocker.stop()
 
 ## How it works
 
-First, `teremock` intercepts puppeteers page requests and tries to find its body in mocks folder. Generated filename depends on `url`, `method` and `postBody` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response, instantly. If not – request will go to the real backend (see also: mockList and okList).
+First, `teremock` intercepts puppeteers page requests and tries to find corresponding responses in the working directory. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response, instantly. If not – request will go to the real backend (see also: options.capturing.urls).
 
 Second, `teremock` intercepts all responds, and writes them to the filesystem, if they are not on it already. In case of `CI` (if mock was not found), it uses mockMiss middleware, so you could be sure – all your requests are mocked (or build will fail otherwise).
+
+> Important to note! By default, teremock intercepts all requests, including html, assets, and even fonts requests! So, technically, you could mock not only requests from your testpage, but testpage itself! To prevent that, start mocker _after_ navigtion happened, or use `options.capture` to filter requests to be mocked. See `examples/mock-testpage-itself/` for details.
 
 ## Pipeline
 
@@ -38,11 +40,32 @@ All options are optional (that's why they called so).
 const options = {
   // Absolute path to working directory, where you want to store mocks
   // path.resolve(process.cwd(), '__teremocks__') by default
-  wd: __dirname,
+  // It is recommended to create separate directory for each test suite
+  wd: path.resolve(__dirname, '__teremocks__'),
 
   // puppeteer page
   // global.page by default
   page: page,
+
+  // Determines which request is for mocking.
+  // By default – mocking is switched off, because there are many resources
+  // (like app.js, style.css, etc) which should not be mocked in 99% of cases
+  capture: {
+    // default: ['*'] (all requests)
+    urls: ['my-backend.org/used/by/test']
+    // default: ['*'] (all methods)
+    methods: ['get']
+  },
+
+  // If request is not to be mocked, it could be aborted or passed.
+  // Note: all navigation requests are passed for any `pass` value.
+  // By default, block any cross origin and non-GET same-origin requests
+  // This default value allows you to get assets, like js, css, images...
+  // without need to mock them
+  pass: {
+    urls: ['same-origin'],
+    methods: ['get'],
+  },
 
   // Some parameters, which are used when calculating mock filenames (see below `Mock files naming` section)
   naming: {
@@ -56,28 +79,11 @@ const options = {
     },
   }
 
-  // Probably you dont want to mock some requests (e.g. cdn js files)
-  // And you definitely dont want to mock your webapp requests (e.g. localhost/app.js)
-  // So, you could explicitly whitelist urls you want to mock
-  // _all except localhost_ if both – mockList and okList – were not set
-  // Could be an array, or a `,` delimited string
-  mockList: 'my-backend.org/used/by/test',
+  // Additional delay for responses. Could be usefull for stabilizing flacky tests.
+  // Note: you could add `mock.meta.delay` key for any mock
+  delay: 0,
 
-  // It is recommended to explicitly mock only _critical-for-your-test_ urls
-  // But you could also mock with simple 200-OK response some other requests,
-  // which are not critical, but should be intercepted
-  // (to prevent ddos-effect to your real backend, for example)
-  // All items from mockList have higher priority over okList
-  // Could be an array, or a `,` delimited string
-  okList: ['my-backend.org/not/critical/for/test'],
-
-  // If url not in mockList, nor okList, it will be blocked, unless any of two conditions
-  // 1) url is same origin, and method is GET
-  // 2) url is matched agains any string in passList
-  // By default, block any cross origin and non-GET same-origin requests
-  passList: [],
-
-  // Run as CI if true. That means, your tests will fail if any of the requests were not mocked
+  // Run as CI if true. In CI mode storage will not try to save any mocks.
   // Default is `is-ci` package value (same as in Jest)
   ci: require('is-ci'),
 

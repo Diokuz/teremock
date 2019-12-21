@@ -7,17 +7,28 @@ import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
 import isCi from 'is-ci'
+import storage from './storage'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
 import { Options, UserOptions } from './types'
+import { isSpyMatched } from './utils'
 
-const logger = debug('prm')
+const logger = debug('teremock')
 
 const defaultParams: Options = {
   wd: path.resolve(process.cwd(), '__teremocks__'),
   // @ts-ignore
   page: typeof page === 'undefined' ? null : page,
+  capture: {
+    urls: ['*'],
+    methods: ['*'],
+  },
+  pass: {
+    urls: ['same-origin'], // special keyword, not an url
+    methods: ['get'],
+  },
+  storage,
   skipResponseHeaders: [
     'date',
     'expires',
@@ -28,14 +39,9 @@ const defaultParams: Options = {
     'content-length',
     'server',
   ],
-  okList: [],
-  mockList: [],
-  passList: [],
   force: false,
   // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
   ci: isCi, // Same behaviour as in Jest
-  verbose: false,
-  cacheRequests: false,
   pagesSet: new Set(), // Singleton by default
   mockMiss: 500,
   awaitConnectionsOnStop: false,
@@ -44,6 +50,7 @@ const defaultParams: Options = {
 class Mocker {
   constructor(customDefaultParams = {}) {
     this.defaultParams = Object.assign({}, defaultParams, customDefaultParams)
+    this._spies = []
   }
 
   page: any
@@ -51,7 +58,6 @@ class Mocker {
   extraParams: UserOptions
   params: any
   reqSet: Set<any>
-  cachedReqs: Map<string, any>
   alive: boolean
   reqsPromise: Promise<any>
   requestHandler: Function
@@ -60,24 +66,24 @@ class Mocker {
   _startPromise: Promise<any> | void
   _resolveReqs: Function
   _rejectReqs: Function
+  _spies: any[]
 
   _getParams(userOptions: UserOptions): Options {
-    let resultMockList: string[] = []
-    let resultOkList: string[] = []
-
-    if (typeof userOptions.mockList === 'string') {
-      resultMockList = userOptions.mockList.split(',')
-    } else if (Array.isArray(userOptions.mockList)) {
-      resultMockList = userOptions.mockList
+    const resultCapture = {
+      ...this.defaultParams.capture,
+      ...userOptions.capture,
+    }
+    const resultPass = {
+      ...this.defaultParams.pass,
+      ...userOptions.pass,
     }
 
-    if (typeof userOptions.okList === 'string') {
-      resultOkList = userOptions.okList.split(',')
-    } else if (userOptions.okList === null) {
-      resultOkList = []
+    return {
+      ...this.defaultParams,
+      ...userOptions,
+      capture: resultCapture,
+      pass: resultPass,
     }
-
-    return { ...this.defaultParams, ...userOptions, mockList: resultMockList, okList: resultOkList }
   }
 
   _validate() {
@@ -95,7 +101,7 @@ class Mocker {
     pagesSet.add(page)
   }
 
-  _onAnyReqStart() {
+  _onAnyReqStart(req) {
     if (this.reqSet.size === 0) {
       this.reqsPromise = new Promise((resolve, reject) => {
         this._resolveReqs = resolve
@@ -103,6 +109,14 @@ class Mocker {
           console.trace()
           signale.log('args', args)
           reject(...args)
+        }
+      })
+    }
+
+    if (this._spies.length > 0) {
+      this._spies.forEach(([spyFilter, spy]) => {
+        if (isSpyMatched(spyFilter, req)) {
+          spy.called = true
         }
       })
     }
@@ -123,11 +137,7 @@ class Mocker {
     this._validate()
     this.page = this.params.page
     this.reqSet = new Set()
-    this.cachedReqs = new Map()
     this.onCloseHandler = () => {
-      if (this.cachedReqs.size !== 0) {
-        this.cachedReqs.clear()
-      }
       if (this.reqSet.size !== 0) {
         if (!this.params.ci) {
           signale.error(`Some connections was not completed, but navigation happened.`)
@@ -145,8 +155,7 @@ class Mocker {
     const pureRequestHandler = createRequestHandler({
       ...this.params,
       reqSet: this.reqSet,
-      _onSetReqCache: (req) => this.cachedReqs.set(`${req._url}_${req._method}`, req._postData),
-      _onReqStarted: () => this._onAnyReqStart(),
+      _onReqStarted: (req) => this._onAnyReqStart(req),
       _onReqsReject: (...args) => this._rejectReqs(...args),
       pageUrl: () => this.params.page.url(),
     })
@@ -184,6 +193,11 @@ class Mocker {
   }
 
   set(key, value) {
+    // @todo mockId collision in case of different wd
+    // if (key === 'wd') {
+    //   throw new Error(`you cannot change wd anywhere except mocker.start()!`)
+    // }
+
     this.extraParams = this.extraParams || {}
     this.extraParams[key] = value
   }
@@ -219,11 +233,19 @@ class Mocker {
     return this.reqsPromise || Promise.resolve()
   }
 
+  // application/x-www-form-urlencoded
+  spy(spyFilter: any) {
+    const spy = {}
+
+    this._spies.push([spyFilter, spy])
+
+    return spy
+  }
+
   /*
    * Waits for all connections to be completed and removes all handlers from the page
    */
   stop() {
-    this.cachedReqs.clear()
     if (!this.alive) {
       // Async, because jest suppress Errors in `after` callbacks
       setTimeout(() => {
@@ -302,10 +324,6 @@ class Mocker {
 
         logger(`About to exit from mocker.stop with resolve`)
       })
-  }
-
-  getCachedRequests() {
-    return this.cachedReqs
   }
 }
 

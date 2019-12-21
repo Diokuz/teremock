@@ -16,16 +16,16 @@ const options = {
       label: 'debug',
       logLevel: 'info',
     },
-    read: {
+    get: {
       badge: '»',
       color: 'gray',
-      label: 'read',
+      label: 'storage.get',
       logLevel: 'info',
     },
-    write: {
+    set: {
       badge: 'œ',
       color: 'red',
-      label: 'write',
+      label: 'storage.set',
       logLevel: 'warn',
     },
   },

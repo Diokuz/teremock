@@ -5,7 +5,7 @@
     "target": "es5",
     "lib": ["es2015", "es2016", "dom"],
     "outDir": "./dist",
-    "moduleResolution": "Node",
+    "moduleResolution": "node",
     "module": "CommonJS",
     "noUnusedLocals": true,
     "noUnusedParameters": true,

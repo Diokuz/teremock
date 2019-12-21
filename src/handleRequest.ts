@@ -1,11 +1,12 @@
-import path from 'path'
 import debug from 'debug'
-import signale from 'signale'
-import { shouldOk, shouldNotIntercept, isPassableByDefault } from './utils'
-import * as storage from './storage'
+import signale from './logger'
+import { isCapturable, isPassable, parseUrl } from './utils'
+import getMockId from './mock-id'
 import { Options } from './types'
 
-const logger = debug('prm:-request')
+const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
+
+const logger = debug('teremock:-request')
 
 type Params = Options & {
   reqSet: Set<any>
@@ -21,144 +22,83 @@ export default function createHandler(initialParams) {
   return function handleRequest(interceptedRequest, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
 
-    const {
-      pageUrl,
-      reqSet,
-      wd,
-      okList,
-      ci,
-      verbose,
-      cacheRequests,
-      passList,
-      naming,
-      mockMiss,
-      response,
-      responseHeaders,
-    } = params
+    const { storage, pageUrl, reqSet, wd, ci, pass, naming, mockMiss, response } = params
 
-    if (responseHeaders) {
-      signale.warn(`options.responseHeaders is deprecated,`)
-      signale.warn(`use options.response.headers or mock.response.headers instead.`)
-    }
-
-    const url = interceptedRequest.url()
-    const method = interceptedRequest.method()
+    const url: string = interceptedRequest.url()
+    const method: string = interceptedRequest.method()
     const postData = interceptedRequest.postData()
     const headers = interceptedRequest.headers()
-    const reqParams = { url, method, postData }
+    const reqParams = { url, method, body: postData }
     const purl = typeof pageUrl === 'function' ? pageUrl() : pageUrl
-
-    // https://github.com/Diokuz/puppeteer-request-mocker/pull/12
-    if (cacheRequests) {
-      logger(`» Cached request with method "${method}" and url "${url}"`)
-      params._onSetReqCache(interceptedRequest)
-    }
 
     logger(`» Intercepted request with method "${method}" and url "${url}"`)
 
-    if (verbose) {
-      signale.info(`Request handling for:\n${reqParams}`)
-      signale.info(`Request headers :\n${headers}`)
-      signale.info('handleRequest', interceptedRequest)
-      signale.info('decodeURIComponent(postData)', decodeURIComponent(postData))
-      signale.info('encodeURIComponent(postData)', encodeURIComponent(postData))
-    }
+    signale.debug(`Request handling for:\n${reqParams}`)
+    signale.debug(`Request headers :\n${headers}`)
+    signale.debug('decodeURIComponent(postData)', decodeURIComponent(postData))
+    signale.debug('encodeURIComponent(postData)', encodeURIComponent(postData))
 
-    // If url is not in mockList nor okList
-    if (shouldNotIntercept(params.mockList, okList, url)) {
-      logger('» shouldNotIntercept')
-      let isPassable
+    if (!isCapturable({ capture: params.capture, request: { url, method } })) {
+      logger('» not for capturing')
 
-      if (passList && passList.length) {
-        isPassable = passList.find((passUrl) => url.startsWith(passUrl))
-      } else {
-        isPassable = isPassableByDefault(purl, url, method)
-      }
-
-      if (!isPassable && !interceptedRequest.isNavigationRequest()) {
-        signale.error(`Url ${url} is not from the options.passList, aborting request`)
-        signale.error(`pageUrl is "${purl}", passList is "${passList}"`)
-        interceptedRequest.abort('aborted')
-      } else {
-        logger(`» Url is from pass list, sending it to real server`)
+      if (interceptedRequest.isNavigationRequest()) {
+        logger(`» navigation request, continue without checking in options.pass`)
         interceptedRequest.continue()
+        return
       }
 
-      return
-    }
+      if (isPassable({ pass, pageUrl: purl, reqUrl: url, method })) {
+        logger(`» url is from pass list, sending it to real server`)
+        interceptedRequest.continue()
+        return
+      }
 
-    // Just say OK, dont save the mock
-    if (shouldOk(params.mockList, okList, url)) {
-      logger('» shouldOk. Skipping. Responding with 200-OK')
-
-      interceptedRequest.respond({
-        headers: responseHeaders,
-        ...response,
-        body: 'OK',
-        status: 200,
-      })
+      signale.error(`url ${url} is not from the options.pass, aborting request`)
+      signale.error(`pageUrl is "${purl}", pass is "${pass}"`)
+      interceptedRequest.abort('aborted')
 
       return
     }
+
+    // is for capturing from here!
 
     const mock_params = {
       url,
       method,
       headers,
-      postData,
+      body: postData,
       naming,
-      verbose,
       wd,
     }
 
-    const fn = storage.name(mock_params)
+    const mockId = getMockId(mock_params)
 
-    params._onReqStarted()
-    reqSet.add(fn)
-    debug('prm:connections:add')(
-      path.basename(fn),
-      Array.from(reqSet).map((f: string) => path.basename(f))
-    )
+    params._onReqStarted({ ...parseUrl(url), url, method, body: postData })
+    reqSet.add(mockId)
+    debug('teremock:connections:add')(mockId, Array.from(reqSet))
 
-    logger(`» Trying to read from file ${fn}`)
+    logger(`» trying to get mock with id "${mockId}"`)
 
     storage
-      .read(fn)
-      .then((rawData: any) => {
-        let body = rawData
-        let headers = {}
+      .get(mockId, { wd })
+      .then(async (rawData: any) => {
+        const mock = JSON.parse(rawData)
+        const res = mock.response
+        const mockBody = res.body
+        const headers = res.headers
 
-        try {
-          const res = JSON.parse(rawData).response
-          body = res.body
-          headers = res.headers
-        } catch (e) {
-          logger(`« Failed to parse mock as json, continue as text`)
-          body = rawData.substring(rawData.indexOf('\n\n') + 2)
-          // Old default for options.response.headers for old format mocks
-          headers = (response && response.headers) ||
-            responseHeaders || {
-              'Access-Control-Allow-Headers': 'Content-Type',
-              'Access-Control-Allow-Origin': '*',
-              'Content-Type': 'application/json',
-            }
-          logger(`« Body starts with ${body.substring(0, 100)}`)
-        }
+        logger(`« successfully read from file`)
 
-        logger(`« Successfully read from file`)
+        await sleep(params.delay ?? mock.delay ?? 0)
 
         interceptedRequest.respond({
-          headers: {
-            // mock level headers have higher priprity than global options level headers
-            ...responseHeaders,
-            ...headers,
-          },
-          body: typeof body === 'string' ? body : JSON.stringify(body),
+          headers,
+          body: typeof mockBody === 'string' ? mockBody : JSON.stringify(mockBody),
           ...response,
         })
       })
       .catch((e) => {
-        logger(`« Failed to read: ${e.fn}`)
+        logger(`« failed to read: ${e.fn}`)
 
         if (ci) {
           if (mockMiss === 'throw') {

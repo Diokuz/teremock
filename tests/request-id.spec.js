@@ -1,4 +1,4 @@
-const getRequestId = require('../src/getRequestId').default
+const getRequestId = require('../dist/request-id').default
 
 it('Generates same names for same request', () => {
   const name1 = getRequestId({ url: 'http://example.com' })
@@ -64,14 +64,14 @@ it('params from body.blacklist for request with content-type="application/json" 
     url: 'http://example.com',
     method,
     headers,
-    postData: JSON.stringify({ foo: 'bar', x: 2 }),
+    body: JSON.stringify({ foo: 'bar', x: 2 }),
     naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
-    postData: JSON.stringify({ foo: 'bazzzz', x: 2 }),
+    body: JSON.stringify({ foo: 'bazzzz', x: 2 }),
     naming
   })
 
@@ -86,14 +86,14 @@ it('Skipped post body params for request with content-type="application/x-www-fo
     url: 'http://example.com',
     method: 'POST',
     headers,
-    postData: "foo=bar&x=2",
+    body: "foo=bar&x=2",
     naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method: 'POST',
     headers,
-    postData: "foo=bazzzz&x=2",
+    body: "foo=bazzzz&x=2",
     naming
   })
 
@@ -108,14 +108,14 @@ it('Skipped post body params for request without content-type affects output nam
     url: 'http://example.com',
     method,
     headers,
-    postData: "foo=bar&x=2",
+    body: "foo=bar&x=2",
     naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
-    postData: "foo=bazzzz&x=2",
+    body: "foo=bazzzz&x=2",
     naming
   })
 
@@ -130,14 +130,14 @@ it('Skipped post body params for request with not supported content-type affects
     url: 'http://example.com',
     method,
     headers,
-    postData: 'foo=bar&x=2',
+    body: 'foo=bar&x=2',
     naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
-    postData: 'foo=bazzzz&x=2',
+    body: 'foo=bazzzz&x=2',
     naming
   })
 
@@ -152,14 +152,14 @@ it('Skip nested post body params', () => {
     url: 'http://example.com',
     method,
     headers,
-    postData: JSON.stringify({ foo: { bar: 1 }, baz: 2 }),
+    body: JSON.stringify({ foo: { bar: 1 }, baz: 2 }),
     naming
   })
   const name2 = getRequestId({
     url: 'http://example.com',
     method,
     headers,
-    postData: JSON.stringify({ foo: { bar: 2 }, baz: 2 }),
+    body: JSON.stringify({ foo: { bar: 2 }, baz: 2 }),
     naming
   })
 
@@ -173,11 +173,11 @@ it('Nonexistent level of nested body parameters does not throw an error', () => 
     url: 'http://example.com',
     method: 'POST',
     headers:{ 'content-type': 'application/json' },
-    postData: JSON.stringify({ foo: 1 }),
+    body: JSON.stringify({ foo: 1 }),
     naming
   })
 })
 
 it('Non-json post body does not throws an error', () => {
-  getRequestId({ url: 'http://example.com', postData: 'post_body' })
+  getRequestId({ url: 'http://example.com', body: 'post_body' })
 })

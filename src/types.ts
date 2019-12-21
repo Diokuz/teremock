@@ -13,23 +13,40 @@ export type Naming = {
   }
 }
 
+export type Capture = {
+  urls: string[]
+  methods: string[]
+}
+
+export type Pass = {
+  urls: string[]
+  methods: string[]
+}
+
 export type Options = {
   wd: string
   naming: Naming
-  mockList: string[]
   mockMiss: string | Function | number
   ci: boolean
   passList: string[]
   response: any
-
-  // deprecated
-  cacheRequests: boolean
-  verbose: boolean
-  okList: string[]
-  responseHeaders: any
+  storage: {
+    get: Function
+    set: Function
+  }
+  capture: Capture
+  pass: Pass
+  delay: number
 }
 
 export type UserOptions = {
-  mockList?: string | string[]
-  okList?: string | string[]
+  capture?: {
+    urls?: string[]
+    methods?: string[]
+  }
+  pass?: {
+    urls?: string[]
+    methods?: string[]
+  }
+  delay?: number
 }
