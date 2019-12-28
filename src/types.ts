@@ -6,6 +6,7 @@ export interface Storage {
   get: (key: string) => Promise<any>
   set: (key: string, data: any) => Promise<void>
   has: (key: string) => Promise<boolean>
+  setWd: (wd: string) => void
 }
 
 export type Naming = {
@@ -30,7 +31,7 @@ export type Pass = {
 }
 
 export type Interceptor = {
-  name: string // from keys of UserInterceptor
+  name?: string // from keys of UserInterceptor. If no name, hostname+path is used
   url: string
   methods: Set<string>
   query?: Record<string, any>
@@ -47,17 +48,16 @@ export type UserInterceptor = {
   query?: Record<string, any>
   body?: Record<string, any>
   pass?: boolean
-  response?: Response
+  response?: Response | any
 }
 
 export type Options = {
   interceptors: Record<string, Interceptor>
-
-  wd: string
   ci: boolean
   response?: Response
   skipResponseHeaders: string[]
   awaitConnectionsOnStop: boolean
+  wd?: string
 }
 
 export type UserOptions = {
@@ -79,13 +79,17 @@ export type Response = {
   headers: Record<string, string>
   ttfb: (() => number) | number
   body?: string | Record<string, any>
+  __meta: {
+    request: Request
+    interceptor: Interceptor
+  }
 }
 
 export type DrivetRequest = {
   request: Request
   abort: Function
   next: Function
-  respond: (data: any) => void
+  respond: (data: any, interceptor: Interceptor) => void
 }
 
 export type DrivetResponse = {

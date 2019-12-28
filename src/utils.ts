@@ -4,6 +4,7 @@ import { Request, Options, UserOptions, Interceptor, UserInterceptor } from './t
 import { DEFAULT_INTERCEPTOR } from './consts'
 
 const logger = debug('teremock:utils')
+const loggerint = debug('teremock:utils:interceptor')
 
 type InParams = {
   interceptors: Record<string, Interceptor>
@@ -25,8 +26,10 @@ export const hasMatch = (arr, str) => {
 // @todo tests
 export const findInterceptor = ({ interceptors, request }: InParams): Interceptor | null => {
   const { url, method } = request
+  loggerint(`entering findInterceptor with args`, interceptors, request)
 
   const matchedMockKey = Object.keys(interceptors).reverse().find((key) => {
+    loggerint(`checking key`, key)
     const interceptor = interceptors[key] as Interceptor
 
     return Object.keys(interceptor).reduce<boolean>((acc, key) => {
@@ -56,6 +59,8 @@ export const findInterceptor = ({ interceptors, request }: InParams): Intercepto
       }
     }, true)
   })
+
+  loggerint(`found an interceptor`, matchedMockKey)
 
   return typeof matchedMockKey === 'string' ? interceptors[matchedMockKey] : null
 }
@@ -145,6 +150,10 @@ export function blacklist(source: Record<string, any>, list: string[]) {
   }, {})
 }
 
+// function isResponse(maybeResponse: Response | Object | void): maybeResponse is Response {
+//   return !!maybeResponse && 'body' in maybeResponse
+// }
+
 export function userInterceptorToInterceptor(userInterceptor: UserInterceptor, nameArg: string): Interceptor {
   const name = userInterceptor.name || nameArg
   const validName = name.replace(/[^a-z0-9_-]+/, '')
@@ -166,10 +175,11 @@ export function userInterceptorToInterceptor(userInterceptor: UserInterceptor, n
 
 export function userOptionsToOptions(defaultOptions: Options, userOptions: UserOptions): Options {
   const defaultInterceptors = defaultOptions.interceptors
+  const { page, ...restUO } = userOptions
   let interceptors = defaultInterceptors
 
-  if (typeof userOptions.interceptors !== 'undefined') {
-    const userInterceptors: Record<string, UserInterceptor> = userOptions.interceptors
+  if (typeof restUO.interceptors !== 'undefined') {
+    const userInterceptors: Record<string, UserInterceptor> = restUO.interceptors
 
     interceptors = Object.keys(userInterceptors).reduce<Record<string, Interceptor>>((acc, key) => {
       acc[key] = userInterceptorToInterceptor(userInterceptors[key], key)
@@ -180,7 +190,7 @@ export function userOptionsToOptions(defaultOptions: Options, userOptions: UserO
 
   return {
     ...defaultOptions,
-    ...userOptions,
+    ...restUO,
     interceptors,
   }
 }

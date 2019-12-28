@@ -1,5 +1,5 @@
 import debug from 'debug'
-import { Request, DrivetRequest } from '../types'
+import { Request, Response, DrivetRequest, Interceptor } from '../types'
 
 const logger = debug('teremock:puppeteer:request')
 
@@ -12,13 +12,21 @@ export async function extractPuppeteerRequest(puppeteerRequest): Promise<DrivetR
   }
 
   puppeteerRequest.timestamp = Date.now()
+  puppeteerRequest.teremockRequest = request
+  puppeteerRequest.__meta = { request }
 
   logger(`got the request, sending it to teremock core`)
 
   return {
     request,
     abort: (...args) => puppeteerRequest.abort(...args),
-    next: (...args) => puppeteerRequest.continue(...args),
-    respond: (...args) => puppeteerRequest.respond(...args),
+    next: (interceptor: Interceptor) => {
+      puppeteerRequest.__meta.interceptor = interceptor
+      puppeteerRequest.continue()
+    },
+    respond: (response: Response, interceptor: Interceptor) => {
+      puppeteerRequest.__meta.interceptor = interceptor
+      puppeteerRequest.respond(response)
+    },
   }
 }

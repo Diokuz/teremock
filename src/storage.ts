@@ -14,7 +14,6 @@ export const getFileName = ({ wd, mockId }: { wd: string; mockId: string }): str
 }
 
 type ConstructParams = {
-  ci: boolean,
   wd: string,
 }
 
@@ -33,8 +32,8 @@ type GetRet = {
 export default class FileStorage implements Storage {
   private wd: string
 
-  constructor({ wd }: ConstructParams) {
-    this.wd = wd
+  constructor(params?: ConstructParams) {
+    this.wd = params?.wd ?? path.resolve(process.cwd(), '__teremocks__')
   }
 
   async set(mockId: string, json: Json): Promise<void> {

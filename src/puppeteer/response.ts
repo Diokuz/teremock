@@ -39,6 +39,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     headers: puppeteerResponse.headers(),
     body: responseBody,
     ttfb: timestamp - puppeteerRequest.timestamp,
+    __meta: puppeteerRequest.__meta,
   }
 
   logger(`got the response, sending it to teremock core`)

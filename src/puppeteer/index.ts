@@ -12,6 +12,8 @@ class PuppeteerDriver implements Driver {
   private page: any
 
   constructor({ page }: any) {
+    logger.debug(`instantiating new driver`)
+
     if (!page) {
       throw new Error('"page" is not defined')
     }
@@ -55,9 +57,9 @@ class PuppeteerDriver implements Driver {
 
   onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
-      const { request, response: pResponse } = await extractPuppeteerResponse(interceptedResponse)
+      const { request, response } = await extractPuppeteerResponse(interceptedResponse)
 
-      fn({ request, response: pResponse })
+      fn({ request, response })
     }
 
     // Intercepting all requests and respinding with mocks

@@ -29,7 +29,7 @@ export default function createHandler(initialParams) {
     const interceptor = findInterceptor({ interceptors, request })
 
     if (!interceptor) {
-      logger(`» mock mot found, skipping`)
+      logger(`» interceptor mot found, skipping`)
 
       return
     }
@@ -39,15 +39,12 @@ export default function createHandler(initialParams) {
     const mockExist: boolean = await storage.has(mockId)
 
     /**
-     * @attention here!
-     * Existing mocks will not be overwritten.
-     * To update mocks, remove them first.
-     * Otherwise it would create files for manual (e.g. mocker.set('response', ...)) mocks
+     * @todo update mock in non-ci mode
      */
-    if (!ci && !mockExist) {
+    if (!ci && !mockExist && !response.__meta.interceptor.response) {
       logger(`» preparing to set a new mock "${mockId}"`)
-      // @ts-ignore
-      await storage.set(mockId, { request, response })
+      const { __meta, ...data } = response
+      await storage.set(mockId, { request, response: data })
     }
 
     reqSet.delete(mockId)

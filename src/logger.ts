@@ -1,20 +1,35 @@
 import { Signale } from 'signale'
 
-let logLevel = process.env.SIGNALE_LOG_LEVEL || 'debug'
+let logLevel = process.env.DEBUG_LL || 'info'
+let resultLogLevel = 'debug'
+
+if (logLevel === 'debug') {
+  resultLogLevel = 'info'
+}
+
+if (logLevel === 'info') {
+  resultLogLevel = 'debug'
+}
 
 const options = {
   disabled: false,
   interactive: false,
-  logLevel,
+  logLevel: resultLogLevel,
   scope: 'teremock',
   secrets: [],
   stream: process.stdout,
   types: {
     debug: {
-      badge: '»',
+      badge: '•',
       color: 'grey',
       label: 'debug',
       logLevel: 'info',
+    },
+    info: {
+      badge: '»',
+      color: 'blue',
+      label: 'info',
+      logLevel: 'debug',
     },
     get: {
       badge: '»',

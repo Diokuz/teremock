@@ -3,7 +3,6 @@
  * @todo instantiate for each test suite explicitly
  */
 
-import makeDir from 'make-dir'
 import debug from 'debug'
 import FileStorage from './storage'
 import signale from './logger'
@@ -13,6 +12,7 @@ import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor } f
 import { isSpyMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
 import PuppeteerDriver from './puppeteer'
 import { DEFAULT_OPTIONS } from './consts'
+import { humanize } from './words-hash'
 
 const logger = debug('teremock')
 
@@ -38,13 +38,15 @@ class Mocker {
   private _spies: any[]
   private _interceptors: Record<string, Interceptor>
 
-  constructor(customDefaultOptions = {}) {
-    this.defaultOptions = Object.assign({}, DEFAULT_OPTIONS, customDefaultOptions)
+  constructor(opts?: any) {
+    signale.debug(`new Mocker`)
+    this.defaultOptions = Object.assign({}, DEFAULT_OPTIONS)
 
     this._spies = []
     this._interceptors = {}
     this._resolveReqs = noop
     this._rejectReqs = noop
+    this.storage = opts?.storage ?? new FileStorage()
   }
 
   private _onAnyReqStart(req) {
@@ -72,14 +74,19 @@ class Mocker {
    * Starts to intercept requests
    */
   public async start(userOptions: UserOptions) {
+    signale.debug(`mocker.start()`)
+    if (this.alive) {
+      signale.warn(`mocker was not stopped before new start call, stopping it first`)
+      await this.stop()
+    }
+
     let resolveStartPromise
     this._startPromise = new Promise((resolve) => {
       resolveStartPromise = resolve
     })
     this.alive = true
     this.options = userOptionsToOptions(this.defaultOptions, userOptions)
-    await makeDir(this.options.wd)
-    this.storage = new FileStorage({ wd: this.options.wd, ci: this.options.ci })
+    this.options.wd && this.storage.setWd(this.options.wd)
     this.driver = new PuppeteerDriver({ page: userOptions.page })
     this._spies = []
     this._interceptors = this.options.interceptors
@@ -126,10 +133,16 @@ class Mocker {
     logger('Handlers created, params validated')
 
     // Intercepting all requests and respinding with mocks
-    this.removeRequestHandler = this.driver.onRequest((ir) => pureRequestHandler(ir, this.extraParams))
+    this.removeRequestHandler = this.driver.onRequest((ir) => pureRequestHandler(ir, {
+      ...this.extraParams,
+      interceptors: this._interceptors,
+    }))
 
     // Writing mocks on real responses to filesystem
-    this.removeResponseHandler = this.driver.onResponse((ir) => pureResponseHandler(ir, this.extraParams))
+    this.removeResponseHandler = this.driver.onResponse((ir) => pureResponseHandler(ir, {
+      ...this.extraParams,
+      interceptors: this._interceptors,
+    }))
 
     logger('_startPromise about to resolve (Request interception enabled, listeners added)')
 
@@ -139,7 +152,7 @@ class Mocker {
   }
 
   public add(userInterceptor: UserInterceptor, overwrite = false) {
-    const name = userInterceptor.name || Math.random() + ''
+    const name = userInterceptor.name || humanize(Math.random() + '', 1)
     const interceptor = userInterceptorToInterceptor(userInterceptor, name)
 
     if (name in this._interceptors && !overwrite) {
@@ -185,7 +198,7 @@ class Mocker {
   /*
    * Waits for all connections to be completed and removes all handlers from the page
    */
-  public async stop(opts: any) {
+  public async stop(opts: any = {}) {
     const { safe } = opts
     if (!this.alive) {
       if (safe) {

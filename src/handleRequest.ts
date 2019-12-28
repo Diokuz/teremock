@@ -2,7 +2,7 @@ import debug from 'debug'
 import signale from './logger'
 import { findInterceptor, parseUrl } from './utils'
 import getMockId from './mock-id'
-import { Options, Response, Storage } from './types'
+import { Options, Response, Storage, Interceptor } from './types'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
@@ -22,7 +22,7 @@ async function sleep(time) {
   })
 }
 
-async function respondWithDelay(respond, resp: Response) {
+async function respondWithDelay(respond, resp: Response, interceptor: Interceptor) {
   const ttfb = resp?.ttfb ?? 0
   const actualDelay: number = typeof ttfb === 'function' ? ttfb() : ttfb
 
@@ -32,7 +32,7 @@ async function respondWithDelay(respond, resp: Response) {
 
   const bodyStr = getBodyStr(resp.body)
 
-  respond({ ...resp, body: bodyStr })
+  respond({ ...resp, body: bodyStr }, interceptor)
 }
 
 // Need type string here
@@ -61,13 +61,13 @@ export default function createHandler(initialParams) {
 
     if (interceptor.pass) {
       logger(`» mock.pass is true, sending it to real server`)
-      next()
+      next(interceptor)
       return
     }
 
     if (interceptor.response) {
       logger(`» mock.response defined, responding with it`)
-      await respondWithDelay(respond, interceptor.response)
+      await respondWithDelay(respond, interceptor.response, interceptor)
       return
     }
 
@@ -83,14 +83,14 @@ export default function createHandler(initialParams) {
     logger(`» trying to get mock with id "${mockId}"`)
 
     if (await storage.has(mockId)) {
-      logger(`» mock exists!`)
+      logger(`» mock "${mockId}" exists!`)
 
       const mock = await storage.get(mockId)
       const resp = { ...mock.response, ...globalResp }
 
       logger(`« successfully read from "${mockId}", responding`)
 
-      await respondWithDelay(respond, resp)
+      await respondWithDelay(respond, resp, interceptor)
     } else {
       logger(`» mock does not exist!`)
 
@@ -98,7 +98,7 @@ export default function createHandler(initialParams) {
         signale.warn(`mock file not found in ci mode, url is "${request.url}"`)
       } else {
         logger('« about to next()...')
-        next()
+        next(interceptor)
       }
     }
   }

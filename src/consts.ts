@@ -1,12 +1,12 @@
-import path from 'path'
 import isCi from 'is-ci'
 import { Options, Interceptor } from './types'
 
 export const DEFAULT_INTERCEPTOR = {
-  name: 'default',
+  // @todo headers: { only application/json by default }
   url: '*',
   methods: new Set('get,post,put,patch,delete,option,head'.split(',')),
   pass: false,
+  hash: {},
 }
 
 const defaultInterceptors: Record<string, Interceptor> = {
@@ -14,7 +14,6 @@ const defaultInterceptors: Record<string, Interceptor> = {
 }
 
 export const DEFAULT_OPTIONS: Options = {
-  wd: path.resolve(process.cwd(), '__teremocks__'),
   interceptors: defaultInterceptors,
   skipResponseHeaders: [
     'date',

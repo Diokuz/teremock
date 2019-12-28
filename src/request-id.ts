@@ -4,7 +4,6 @@ import { createHash } from 'crypto'
 import { URL } from 'url'
 // @ts-ignore
 import queryString from 'query-string'
-import logger from './logger'
 import { humanize } from './words-hash'
 import { Naming } from './types'
 
@@ -61,8 +60,6 @@ const getRequestId = (params: Params) => {
     }
   }
 
-  logger.debug('requestId: bodyObj', bodyObj)
-
   if (bodyObj) {
     bodyBlacklist.forEach((param: string | string[]) => {
       let currentObj = bodyObj
@@ -108,8 +105,6 @@ const getRequestId = (params: Params) => {
   // @ts-ignore
   queryBlacklist.forEach((param) => urlObj.searchParams.delete(param))
   let baseStr = urlObj.toString() + body
-
-  logger.debug('requestId: baseStr, baseStr.length', baseStr, baseStr.length)
 
   const entries = [...urlObj.searchParams]
 

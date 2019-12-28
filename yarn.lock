@@ -4172,13 +4172,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pending-xhr-puppeteer@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "pending-xhr-puppeteer@npm:2.1.0"
-  checksum: ad9f24241a1eb1a1a2efa5f091aabb475ce825965186c8815ea3d93c11b583b02253c4246d12bd8df5278bc218c178376bff4c45f989c208bd2752e70826127e
-  languageName: node
-  linkType: hard
-
 "performance-now@npm:^2.1.0":
   version: 2.1.0
   resolution: "performance-now@npm:2.1.0"
@@ -5279,7 +5272,6 @@ __metadata:
     is-ci: ^2.0.0
     jest: ^24.9.0
     make-dir: ^3.0.0
-    pending-xhr-puppeteer: ^2.1.0
     prettier: 1.19.1
     puppeteer: ^2.0.0
     query-string: ^6.8.3
