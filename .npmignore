@@ -1,6 +1,6 @@
 assets
 screenshots
-tests
+__tests__
 .pnp
 .pnp.js
 __teremocks__
@@ -16,3 +16,7 @@ README.md
 .yarn
 examples
 screenshots
+src
+contributing.md
+jest.config.js
+tsconfig.json

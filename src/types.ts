@@ -2,6 +2,12 @@ type ListItem = string | string[]
 
 type List = ListItem[]
 
+export interface Storage {
+  get: (key: string) => Promise<any>
+  set: (key: string, data: any) => Promise<void>
+  has: (key: string) => Promise<boolean>
+}
+
 export type Naming = {
   query?: {
     whitelist?: string[]
@@ -23,39 +29,40 @@ export type Pass = {
   methods: string[]
 }
 
-export type Options = {
-  wd: string
-  naming: Naming
-  mockMiss: string | Function | number
-  ci: boolean
-  response: any
-  storage: {
-    get: (id: string, opts?: any) => Promise<Record<string, any>>
-    set: (id: string, data: any, opts?: any) => Promise<void>
-    has: (id: string, opts?: any) => Promise<boolean>
-  }
-  capture: Capture
-  pass: Pass
-  delay: number
+export type Interceptor = {
+  name: string // from keys of UserInterceptor
+  url: string
+  methods: Set<string>
+  query?: Record<string, any>
+  body?: Record<string, any>
+  pass: boolean
+  hash?: Naming
+  response?: Response
+}
 
-  page: any
-  pagesSet: Set<any>
+export type UserInterceptor = {
+  name?: string
+  url?: string
+  methods?: string
+  query?: Record<string, any>
+  body?: Record<string, any>
+  pass?: boolean
+  response?: Response
+}
+
+export type Options = {
+  interceptors: Record<string, Interceptor>
+
+  wd: string
+  ci: boolean
+  response?: Response
   skipResponseHeaders: string[]
   awaitConnectionsOnStop: boolean
 }
 
 export type UserOptions = {
-  capture?: {
-    urls?: string[]
-    methods?: string[]
-  }
-  pass?: {
-    urls?: string[]
-    methods?: string[]
-  }
-  delay?: number
-
   page?: any
+  interceptors?: Record<string, UserInterceptor>
   skipResponseHeaders?: string[]
 }
 
@@ -95,4 +102,5 @@ export interface Driver {
   onRequest: (fn: OnRequestHandler) => Function
   onResponse: (fn: OnResponseHandler) => Function
   onClose: (fn: any) => Function
+  getPageUrl: () => string
 }

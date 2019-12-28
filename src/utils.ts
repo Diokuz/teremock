@@ -1,11 +1,12 @@
 import { URL } from 'url'
 import debug from 'debug'
-import { Capture, Request } from './types'
+import { Request, Options, UserOptions, Interceptor, UserInterceptor } from './types'
+import { DEFAULT_INTERCEPTOR } from './consts'
 
 const logger = debug('teremock:utils')
 
 type InParams = {
-  capture: Capture
+  interceptors: Record<string, Interceptor>
   request: {
     url: string
     method: string
@@ -22,13 +23,41 @@ export const hasMatch = (arr, str) => {
 }
 
 // @todo tests
-export const isCapturable = ({ capture, request }: InParams) => {
-  const isUrlMockable = hasMatch(capture.urls, request.url)
-  const isMethodMockable = hasMatch(capture.methods, request.method)
+export const findInterceptor = ({ interceptors, request }: InParams): Interceptor | null => {
+  const { url, method } = request
 
-  logger(`checking for capturability, isUrlMockable === ${isUrlMockable}, isMethodMockable === ${isMethodMockable}`)
+  const matchedMockKey = Object.keys(interceptors).reverse().find((key) => {
+    const interceptor = interceptors[key] as Interceptor
 
-  return isUrlMockable && isMethodMockable
+    return Object.keys(interceptor).reduce<boolean>((acc, key) => {
+      const value = interceptor[key]
+
+      // Nothing to compare === wildcard (for given `key`)
+      if (typeof value === 'undefined' || value === '*') {
+        return acc
+      }
+
+      switch (key) {
+        case 'url':
+          return acc && url.includes(value)
+        case 'methods':
+          return acc && value.has(method.toLowerCase())
+        case 'query':
+          const query = getQuery(url)
+
+          return (
+            acc &&
+            Object.keys(value).reduce((a, k) => {
+              return a && value[k] === query[k]
+            }, true)
+          )
+        default:
+          return acc
+      }
+    }, true)
+  })
+
+  return typeof matchedMockKey === 'string' ? interceptors[matchedMockKey] : null
 }
 
 function sameOrigin(url1, url2) {
@@ -49,6 +78,7 @@ export function isPassable({ pageUrl, reqUrl, method, pass }) {
   return isUrlPassable && isMethodPassable
 }
 
+// duplicates are not supported
 export function getQuery(url) {
   const urlObj = new URL(url)
   urlObj.searchParams.sort()
@@ -113,4 +143,44 @@ export function blacklist(source: Record<string, any>, list: string[]) {
 
     return acc
   }, {})
+}
+
+export function userInterceptorToInterceptor(userInterceptor: UserInterceptor, nameArg: string): Interceptor {
+  const name = userInterceptor.name || nameArg
+  const validName = name.replace(/[^a-z0-9_-]+/, '')
+
+  if (name !== validName) {
+    throw new Error(`invalid mocks name "${name}"! only letters, digits, - and _ are allowed.`)
+  }
+
+  const defaultMethods = DEFAULT_INTERCEPTOR.methods
+  const methods = typeof userInterceptor.methods === 'string' ? new Set(userInterceptor.methods.split(',')) : defaultMethods
+
+  return {
+    ...DEFAULT_INTERCEPTOR,
+    ...userInterceptor,
+    methods,
+    name,
+  }
+}
+
+export function userOptionsToOptions(defaultOptions: Options, userOptions: UserOptions): Options {
+  const defaultInterceptors = defaultOptions.interceptors
+  let interceptors = defaultInterceptors
+
+  if (typeof userOptions.interceptors !== 'undefined') {
+    const userInterceptors: Record<string, UserInterceptor> = userOptions.interceptors
+
+    interceptors = Object.keys(userInterceptors).reduce<Record<string, Interceptor>>((acc, key) => {
+      acc[key] = userInterceptorToInterceptor(userInterceptors[key], key)
+
+      return acc
+    }, {})
+  }
+
+  return {
+    ...defaultOptions,
+    ...userOptions,
+    interceptors,
+  }
 }

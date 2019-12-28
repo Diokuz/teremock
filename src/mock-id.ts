@@ -4,6 +4,7 @@ import { Naming } from './types'
 type GetMockIdParams = {
   url: string
   naming: Naming
+  name: string
   method?: string
   body?: string
   headers?: Record<string, string>
@@ -17,12 +18,17 @@ type GetMockIdParams = {
  * different options.wd
  */
 const getMockId = (params: GetMockIdParams) => {
-  const { url, naming, method, body, headers } = params
+  const { url, naming, name, method, body, headers } = params
   const { hostname, pathname } = new URL(url)
 
-  const slugs: string[] = pathname.split('/').filter((s) => !!s)
-  slugs.unshift(hostname)
-  const pathId = slugs.join('-')
+  let pathId = name
+
+  if (!pathId) {
+    const slugs: string[] = pathname.split('/').filter((s) => !!s)
+    slugs.unshift(hostname)
+
+    pathId = slugs.join('-')
+  }
 
   const requestId = getRequestId({ url, naming, method, body, headers })
   const mockId = pathId + '--' + requestId

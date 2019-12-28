@@ -1,7 +1,7 @@
 import debug from 'debug'
-import { isCapturable, blacklist } from './utils'
+import { findInterceptor, blacklist } from './utils'
 import getMockId from './mock-id'
-import { Options } from './types'
+import { Options, Storage } from './types'
 
 const logger = debug('teremock:response')
 
@@ -9,6 +9,7 @@ type Params = Options & {
   reqSet: Set<any>
   _onReqsCompleted: Function
   pageUrl: () => string
+  storage: Storage
 }
 
 export default function createHandler(initialParams) {
@@ -16,7 +17,7 @@ export default function createHandler(initialParams) {
 
   return async function handleResponse({ request, response: pResponse }, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { storage, reqSet, capture, naming, ci, skipResponseHeaders } = params
+    const { interceptors, storage, reqSet, ci, skipResponseHeaders } = params
 
     const response = {
       ...pResponse,
@@ -25,17 +26,17 @@ export default function createHandler(initialParams) {
 
     logger(`» intercepted response with method "${request.method}" and url "${request.url}"`)
 
-    const dontIntercept = !isCapturable({ capture, request })
+    const interceptor = findInterceptor({ interceptors, request })
 
-    if (dontIntercept) {
-      logger(`» dontIntercept "${dontIntercept}". Skipping.`)
+    if (!interceptor) {
+      logger(`» mock mot found, skipping`)
 
       return
     }
 
     const bodyStr: string = typeof request.body === 'string' ? request.body : JSON.stringify(request.body)
-    const mockId = getMockId({ ...request, naming, body: bodyStr })
-    const mockExist: boolean = await storage.has(mockId, { wd: params.wd })
+    const mockId = getMockId({ ...request, naming: interceptor.hash, name: interceptor.name, body: bodyStr })
+    const mockExist: boolean = await storage.has(mockId)
 
     /**
      * @attention here!
@@ -45,7 +46,8 @@ export default function createHandler(initialParams) {
      */
     if (!ci && !mockExist) {
       logger(`» preparing to set a new mock "${mockId}"`)
-      await storage.set(mockId, { request, response }, { wd: params.wd })
+      // @ts-ignore
+      await storage.set(mockId, { request, response })
     }
 
     reqSet.delete(mockId)

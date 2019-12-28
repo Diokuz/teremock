@@ -8,17 +8,15 @@ const rimraf = require('rimraf')
 const PROJECT_ROOT = process.cwd()
 
 it('filename for domain with path', () => {
-  const mockId = getMockId({ url: 'http://example.com/path/api', naming: {} })
-  const name = getFileName({ mockId, wd: '/diokuz/dir' })
+  const name = getFileName({ mockId: 'a--b', wd: '/diokuz/dir' })
 
-  expect(name).toBe('/diokuz/dir/example.com-path-api/get-door-axe-winter.json')
+  expect(name).toBe('/diokuz/dir/a/b.json')
 })
 
 it('filename for domain with path/', () => {
-  const mockId = getMockId({ url: 'http://example.com/path/api/', naming: {} })
-  const name = getFileName({ mockId, wd: '/diokuz/dir' })
+  const name = getFileName({ mockId: 'example-com--path-api', wd: '/diokuz/dir' })
 
-  expect(name.startsWith('/diokuz/dir/example.com-path-api/get-')).toBe(true)
+  expect(name).toBe('/diokuz/dir/example-com/path-api.json')
 })
 
 describe('storage.get', () => {
@@ -32,7 +30,7 @@ describe('storage.get', () => {
   it('exists', async () => {
     const wd = path.resolve(PROJECT_ROOT, '__teremocks__')
     const storage = new Storage({ wd })
-    const data = await storage.get('localhost-api--get-app-diet-moon')
+    const data = await storage.get('localhost-api--get-q-a')
 
     expect(data.request.method).toBe('GET')
   })

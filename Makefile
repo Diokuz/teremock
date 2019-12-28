@@ -1,5 +1,7 @@
 .PHONY: ts
 ts:
+	rm -r dist
+	cp -r src dist
 	yarn pnpify tsc
 
 

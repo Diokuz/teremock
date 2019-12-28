@@ -2,7 +2,7 @@
   "name": "teremock",
   "version": "0.2.0",
   "description": "Easy to use test request mocker for puppeteer / mocha / karma",
-  "main": "dist/index.js",
+  "main": "dist",
   "installConfig": {
     "pnp": true
   },

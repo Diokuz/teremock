@@ -71,6 +71,10 @@ class PuppeteerDriver implements Driver {
 
     return () => this.page.off('close', fn)
   }
+
+  getPageUrl() {
+    return this.page.url()
+  }
 }
 
 export default PuppeteerDriver

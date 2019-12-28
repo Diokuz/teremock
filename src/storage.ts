@@ -3,6 +3,7 @@ import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
 import signale from './logger'
+import { Storage } from './types'
 
 const loggerGet = debug('teremock:storage:get')
 const loggerSet = debug('teremock:storage:set')
@@ -12,13 +13,9 @@ export const getFileName = ({ wd, mockId }: { wd: string; mockId: string }): str
   return path.resolve(wd, mockId.replace('--', path.sep) + '.json')
 }
 
-type Params = {
+type ConstructParams = {
   ci: boolean,
   wd: string,
-}
-
-type Opts = {
-  wd?: string
 }
 
 type Json = {
@@ -33,18 +30,17 @@ type GetRet = {
   response: Response
 }
 
-export default class Storage {
+export default class FileStorage implements Storage {
   private wd: string
 
-  constructor({ wd }: Params) {
+  constructor({ wd }: ConstructParams) {
     this.wd = wd
   }
 
-  async set(mockId: string, json: Json, opts?: Opts): Promise<void> {
+  async set(mockId: string, json: Json): Promise<void> {
     loggerSet(`entering storage.set with mockId "${mockId}"`)
 
-    const wd = opts?.wd ?? this.wd
-    const absFileName = getFileName({ mockId, wd })
+    const absFileName = getFileName({ mockId, wd: this.wd })
     const targetDir = path.dirname(absFileName)
     const content = JSON.stringify(json, null, '  ')
 
@@ -69,13 +65,12 @@ export default class Storage {
   }
 
   // only for tests
-  _getFn(mockId, opts?: Opts): string {
-    const wd = opts?.wd ?? this.wd
-    return getFileName({ mockId, wd })
+  _getFn(mockId): string {
+    return getFileName({ mockId, wd: this.wd })
   }
 
-  async get(mockId: string, opts?: Opts): Promise<GetRet> {
-    const absFileName = this._getFn(mockId, opts)
+  async get(mockId: string): Promise<GetRet> {
+    const absFileName = this._getFn(mockId)
 
     loggerGet(`about to read file ${absFileName}`)
 
@@ -94,8 +89,8 @@ export default class Storage {
     }
   }
 
-  async has(mockId: string, opts?: Opts): Promise<boolean> {
-    const absFileName = this._getFn(mockId, opts)
+  async has(mockId: string): Promise<boolean> {
+    const absFileName = this._getFn(mockId)
 
     loggerHas(`about to check file ${absFileName}`)
 
@@ -111,5 +106,9 @@ export default class Storage {
     }
 
     return fileExists
+  }
+
+  setWd(nextWd: string): void {
+    this.wd = nextWd
   }
 }

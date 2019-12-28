@@ -3,58 +3,28 @@
  * @todo instantiate for each test suite explicitly
  */
 
-import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
-import isCi from 'is-ci'
-import Storage from './storage'
+import FileStorage from './storage'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
-import { Options, UserOptions, Driver } from './types'
-import { isSpyMatched } from './utils'
+import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor } from './types'
+import { isSpyMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
 import PuppeteerDriver from './puppeteer'
+import { DEFAULT_OPTIONS } from './consts'
 
 const logger = debug('teremock')
 
-// @ts-ignore
-const defaultParams: Options = {
-  wd: path.resolve(process.cwd(), '__teremocks__'),
-  // @ts-ignore
-  page: typeof page === 'undefined' ? null : page,
-  capture: {
-    urls: ['*'],
-    methods: ['*'],
-  },
-  naming: {},
-  pass: {
-    urls: ['same-origin'], // special keyword, not an url
-    methods: ['get'],
-  },
-  // storage, // see constructor
-  skipResponseHeaders: [
-    'date',
-    'expires',
-    'last-modified',
-    'x-powered-by',
-    'etag',
-    'cache-control',
-    'content-length',
-    'server',
-  ],
-  // force: false,
-  // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
-  ci: isCi, // Same behaviour as in Jest
-  mockMiss: 500,
-  awaitConnectionsOnStop: false,
-}
+
 
 function noop() {}
 
 class Mocker {
-  private defaultParams: Options
+  private defaultOptions: Options
   private extraParams: UserOptions
-  private params: Options
+  private options: Options
+  private storage: Storage
   private reqSet: Set<string>
   private alive: boolean
   private reqsPromise: Promise<any>
@@ -66,37 +36,15 @@ class Mocker {
   private _resolveReqs: Function
   private _rejectReqs: Function
   private _spies: any[]
-  private _mocks: any[]
+  private _interceptors: Record<string, Interceptor>
 
-  constructor(customDefaultParams = {}) {
-    this.defaultParams = Object.assign({}, defaultParams, customDefaultParams)
+  constructor(customDefaultOptions = {}) {
+    this.defaultOptions = Object.assign({}, DEFAULT_OPTIONS, customDefaultOptions)
+
     this._spies = []
-    this._mocks = []
+    this._interceptors = {}
     this._resolveReqs = noop
     this._rejectReqs = noop
-  }
-
-  private _getParams(userOptions: UserOptions): Options {
-    const resultCapture = {
-      ...this.defaultParams.capture,
-      ...userOptions.capture,
-    }
-    const resultPass = {
-      ...this.defaultParams.pass,
-      ...userOptions.pass,
-    }
-
-    const staticOptions = {
-      ...this.defaultParams,
-      ...userOptions,
-      capture: resultCapture,
-      pass: resultPass,
-    }
-
-    return {
-      ...staticOptions,
-      storage: staticOptions.storage || new Storage({ wd: staticOptions.wd, ci: staticOptions.ci }),
-    }
   }
 
   private _onAnyReqStart(req) {
@@ -129,21 +77,21 @@ class Mocker {
       resolveStartPromise = resolve
     })
     this.alive = true
-    this.params = this._getParams(userOptions)
-    await makeDir(this.params.wd)
-    this.driver = new PuppeteerDriver({ page: this.params.page })
+    this.options = userOptionsToOptions(this.defaultOptions, userOptions)
+    await makeDir(this.options.wd)
+    this.storage = new FileStorage({ wd: this.options.wd, ci: this.options.ci })
+    this.driver = new PuppeteerDriver({ page: userOptions.page })
     this._spies = []
-    this._mocks = []
+    this._interceptors = this.options.interceptors
 
-    const logParams = Object.assign({}, this.params, { page: '...' })
-    logger('Mocker starts with resulting params:')
-    logger(logParams)
+    const logParams = Object.assign({}, this.options)
+    logger('Mocker starts with resulting params:', logParams)
 
     this.reqSet = new Set()
     // Clear on any page close, or sometimes you loose some responses on unload, and `connections` will never resolves
     this.removeCloseHandler = this.driver.onClose?.(() => {
       if (this.reqSet.size !== 0) {
-        if (!this.params.ci) {
+        if (!this.options.ci) {
           signale.error(`Some connections was not completed, but navigation happened.`)
           signale.error(`That is bad, mkay? Because you have a race: server response and navigation`)
           signale.error(`That will lead to heisenberg MONOFO errors in case when response will win the race`)
@@ -153,18 +101,23 @@ class Mocker {
         this.reqSet.clear()
         this._resolveReqs()
       }
+      this.stop({ safe: true })
     })
 
     const pureRequestHandler = createRequestHandler({
-      ...this.params,
+      ...this.options,
+      interceptors: this._interceptors,
+      storage: this.storage,
       reqSet: this.reqSet,
       _onReqStarted: (req) => this._onAnyReqStart(req),
       _onReqsReject: (...args) => this._rejectReqs(...args),
-      pageUrl: () => this.params.page.url(),
+      pageUrl: () => this.driver.getPageUrl(),
     })
 
     const pureResponseHandler = createResponseHandler({
-      ...this.params,
+      ...this.options,
+      interceptors: this._interceptors,
+      storage: this.storage,
       reqSet: this.reqSet,
       _onReqsCompleted: () => this._resolveReqs(),
       _onReqsReject: (...args) => this._rejectReqs(...args),
@@ -173,7 +126,7 @@ class Mocker {
     logger('Handlers created, params validated')
 
     // Intercepting all requests and respinding with mocks
-    this.removeRequestHandler = this.driver.onRequest((ir) => pureRequestHandler(ir, this.extraParams, this._mocks))
+    this.removeRequestHandler = this.driver.onRequest((ir) => pureRequestHandler(ir, this.extraParams))
 
     // Writing mocks on real responses to filesystem
     this.removeResponseHandler = this.driver.onResponse((ir) => pureResponseHandler(ir, this.extraParams))
@@ -185,28 +138,25 @@ class Mocker {
     return this._startPromise
   }
 
-  public mock(filterArg, responseArg) {
-    const defaultResponse = {
-      status: 200,
-      headers: {},
-      body: {},
-    }
-    let filter = filterArg
-    let response = responseArg
+  public add(userInterceptor: UserInterceptor, overwrite = false) {
+    const name = userInterceptor.name || Math.random() + ''
+    const interceptor = userInterceptorToInterceptor(userInterceptor, name)
 
-    if (typeof filterArg === 'string') {
-      filter = { baseUrl: filterArg }
+    if (name in this._interceptors && !overwrite) {
+      signale.error(`interceptor with name "${name}" already exists, pass second arg true if you want to overwrite it`)
+      return
     }
 
-    if (!('body' in response)) {
-      response = { ...defaultResponse, body: responseArg }
+    this._interceptors = {
+      ...this._interceptors,
+      [name]: interceptor,
     }
 
-    const mock = [filter, response]
-
-    this._mocks.push(mock)
-
-    return () => this._mocks = this._mocks.filter(m => m !== mock)
+    // @todo support restoring overwritten names
+    return () => {
+      const { [name]: omit, ...rest } = this._interceptors
+      this._interceptors = rest
+    }
   }
 
   /*
@@ -235,8 +185,13 @@ class Mocker {
   /*
    * Waits for all connections to be completed and removes all handlers from the page
    */
-  public async stop() {
+  public async stop(opts: any) {
+    const { safe } = opts
     if (!this.alive) {
+      if (safe) {
+        return
+      }
+
       // Async, because jest suppress Errors in `after` callbacks
       setTimeout(() => {
         signale.warn(`nothing to stop. Did you call 'mocker.stop()' twice?`)
@@ -272,7 +227,7 @@ class Mocker {
 
     await this._startPromise
 
-    if (this.params.awaitConnectionsOnStop) {
+    if (this.options.awaitConnectionsOnStop) {
       try {
         await this.connections()
       } catch (err) {

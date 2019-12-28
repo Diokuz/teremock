@@ -2,13 +2,19 @@ const getMockId = require('../dist/mock-id').default
 
 const naming = {}
 
-it('Generates non-empty string', () => {
+it('generates non-empty string', () => {
   const name = getMockId({ url: 'http://example.com/path/api', naming })
 
-  expect(name).toBe('example.com-path-api--get-door-axe-winter')
+  expect(name).toBe('example.com-path-api--get')
 })
 
-it('Generates same id for the same request', () => {
+it('custom name', () => {
+  const name = getMockId({ url: 'http://example.com/path/api', naming, name: 'api' })
+
+  expect(name).toBe('api--get')
+})
+
+it('generates same id for the same request', () => {
   const params = {
     url: 'http://example.com/path/api',
     method: 'put',
@@ -20,21 +26,21 @@ it('Generates same id for the same request', () => {
   expect(name1).toBe(name2)
 })
 
-it('Accounts for hostname', () => {
+it('accounts for hostname', () => {
   const name1 = getMockId({ url: 'http://example1.com', naming })
   const name2 = getMockId({ url: 'http://example2.com', naming })
 
   expect(name1).not.toBe(name2)
 })
 
-it('Accounts for path', () => {
+it('accounts for path', () => {
   const name1 = getMockId({ url: 'http://example.com/path/one', naming })
   const name2 = getMockId({ url: 'http://example.com/path/two/three', naming })
 
   expect(name1).not.toBe(name2)
 })
 
-it('Accounts for method', () => {
+it('accounts for method', () => {
   const name1 = getMockId({ url: 'http://e.com', method: 'post', naming })
   const name2 = getMockId({ url: 'http://e.com', method: 'get', naming })
 
@@ -42,7 +48,7 @@ it('Accounts for method', () => {
 })
 
 // Actually, not. Do you need that?
-it.skip('Accounts for headers', () => {
+it.skip('accounts for headers', () => {
   const name1 = getMockId({ url: 'http://e.com', headers: { foo: 'bar' }, naming })
   const name2 = getMockId({ url: 'http://e.com', headers: { foo: 'bar2' }, naming })
 
