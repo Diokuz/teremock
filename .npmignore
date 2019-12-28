@@ -4,6 +4,7 @@ tests
 .pnp
 .pnp.js
 __teremocks__
+__teremocks-post__
 yarn.lock
 Makefile
 .editorconfig
@@ -11,3 +12,7 @@ Makefile
 .prettierrc.yml
 changelog.md
 README.md
+.vscode
+.yarn
+examples
+screenshots
