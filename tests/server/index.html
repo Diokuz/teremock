@@ -38,6 +38,9 @@
 
   <body>
     <div class='wrap'>
+      <div class='suggest'>Click and wait for GET-request</div>
+      <button id='button'>Click to start</button>
+
       <div class='suggest'>Start typing 'abc' and wait for GET-requests</div>
       <input type='text' id='input' autofocus placeholder="GET" />
       <div class='suggest' id="suggest">&nbsp;</div>
@@ -52,9 +55,20 @@
     </div>
 
     <script>
+      const button = document.querySelector('#button')
       const suggest = document.querySelector('#suggest')
       const suggestPost = document.querySelector('#suggest-post')
       const suggestCors = document.querySelector('#suggest-cors')
+
+      document.querySelector('#button').addEventListener('click', (e) => {
+        fetch(`/api?q=click`)
+          .then(async (re) => {
+            const j = await re.json()
+            const { status } = re
+
+            button.innerText = `${status} ${j.suggest}`
+          })
+      })
 
       document.querySelector('#input').addEventListener('keyup', (e) => {
         const query = e.target.value

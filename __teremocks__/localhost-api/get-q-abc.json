@@ -1,14 +1,14 @@
 {
   "request": {
+    "url": "http://localhost:3000/api?q=abc",
     "method": "GET",
-    "url": "http://localhost:3000/api?q=abcd",
     "headers": {
       "referer": "http://localhost:3000/",
       "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36"
-    },
-    "body": ""
+    }
   },
   "response": {
+    "url": "http://localhost:3000/api?q=abc",
     "status": 200,
     "headers": {
       "access-control-allow-origin": "*",
@@ -16,7 +16,8 @@
       "content-type": "application/json; charset=utf-8"
     },
     "body": {
-      "suggest": "book"
-    }
+      "suggest": "green"
+    },
+    "ttfb": 41
   }
 }

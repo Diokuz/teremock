@@ -7,15 +7,17 @@ import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
 import isCi from 'is-ci'
-import storage from './storage'
+import Storage from './storage'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
-import { Options, UserOptions } from './types'
+import { Options, UserOptions, Driver } from './types'
 import { isSpyMatched } from './utils'
+import PuppeteerDriver from './puppeteer'
 
 const logger = debug('teremock')
 
+// @ts-ignore
 const defaultParams: Options = {
   wd: path.resolve(process.cwd(), '__teremocks__'),
   // @ts-ignore
@@ -24,11 +26,12 @@ const defaultParams: Options = {
     urls: ['*'],
     methods: ['*'],
   },
+  naming: {},
   pass: {
     urls: ['same-origin'], // special keyword, not an url
     methods: ['get'],
   },
-  storage,
+  // storage, // see constructor
   skipResponseHeaders: [
     'date',
     'expires',
@@ -39,36 +42,41 @@ const defaultParams: Options = {
     'content-length',
     'server',
   ],
-  force: false,
+  // force: false,
   // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
   ci: isCi, // Same behaviour as in Jest
-  pagesSet: new Set(), // Singleton by default
   mockMiss: 500,
   awaitConnectionsOnStop: false,
 }
 
+function noop() {}
+
 class Mocker {
+  private defaultParams: Options
+  private extraParams: UserOptions
+  private params: Options
+  private reqSet: Set<string>
+  private alive: boolean
+  private reqsPromise: Promise<any>
+  private removeCloseHandler: Function | null
+  private removeRequestHandler: Function | null
+  private removeResponseHandler: Function | null
+  private driver: Driver
+  private _startPromise: Promise<any> | void
+  private _resolveReqs: Function
+  private _rejectReqs: Function
+  private _spies: any[]
+  private _mocks: any[]
+
   constructor(customDefaultParams = {}) {
     this.defaultParams = Object.assign({}, defaultParams, customDefaultParams)
     this._spies = []
+    this._mocks = []
+    this._resolveReqs = noop
+    this._rejectReqs = noop
   }
 
-  page: any
-  defaultParams: Options
-  extraParams: UserOptions
-  params: any
-  reqSet: Set<any>
-  alive: boolean
-  reqsPromise: Promise<any>
-  requestHandler: Function
-  responseHandler: Function
-  onCloseHandler: Function | null
-  _startPromise: Promise<any> | void
-  _resolveReqs: Function
-  _rejectReqs: Function
-  _spies: any[]
-
-  _getParams(userOptions: UserOptions): Options {
+  private _getParams(userOptions: UserOptions): Options {
     const resultCapture = {
       ...this.defaultParams.capture,
       ...userOptions.capture,
@@ -78,30 +86,20 @@ class Mocker {
       ...userOptions.pass,
     }
 
-    return {
+    const staticOptions = {
       ...this.defaultParams,
       ...userOptions,
       capture: resultCapture,
       pass: resultPass,
     }
+
+    return {
+      ...staticOptions,
+      storage: staticOptions.storage || new Storage({ wd: staticOptions.wd, ci: staticOptions.ci }),
+    }
   }
 
-  _validate() {
-    const { page, pagesSet } = this.params
-
-    if (!page) {
-      throw new Error('Option "page" and global.page – both are not defined')
-    }
-
-    if (pagesSet.has(page)) {
-      throw new Error(`Second "mocker.start()" call on the same page!
-        Probably you didn\'t call "mocker.stop()".`)
-    }
-
-    pagesSet.add(page)
-  }
-
-  _onAnyReqStart(req) {
+  private _onAnyReqStart(req) {
     if (this.reqSet.size === 0) {
       this.reqsPromise = new Promise((resolve, reject) => {
         this._resolveReqs = resolve
@@ -125,19 +123,25 @@ class Mocker {
   /*
    * Starts to intercept requests
    */
-  start(userOptions: UserOptions) {
-    this.reset()
+  public async start(userOptions: UserOptions) {
+    let resolveStartPromise
+    this._startPromise = new Promise((resolve) => {
+      resolveStartPromise = resolve
+    })
     this.alive = true
     this.params = this._getParams(userOptions)
+    await makeDir(this.params.wd)
+    this.driver = new PuppeteerDriver({ page: this.params.page })
+    this._spies = []
+    this._mocks = []
 
     const logParams = Object.assign({}, this.params, { page: '...' })
     logger('Mocker starts with resulting params:')
     logger(logParams)
 
-    this._validate()
-    this.page = this.params.page
     this.reqSet = new Set()
-    this.onCloseHandler = () => {
+    // Clear on any page close, or sometimes you loose some responses on unload, and `connections` will never resolves
+    this.removeCloseHandler = this.driver.onClose?.(() => {
       if (this.reqSet.size !== 0) {
         if (!this.params.ci) {
           signale.error(`Some connections was not completed, but navigation happened.`)
@@ -149,9 +153,8 @@ class Mocker {
         this.reqSet.clear()
         this._resolveReqs()
       }
-    }
-    // Clear on any page close, or sometimes you loose some responses on unload, and `connections` will never resolves
-    this.params.page.on('close', this.onCloseHandler)
+    })
+
     const pureRequestHandler = createRequestHandler({
       ...this.params,
       reqSet: this.reqSet,
@@ -159,70 +162,58 @@ class Mocker {
       _onReqsReject: (...args) => this._rejectReqs(...args),
       pageUrl: () => this.params.page.url(),
     })
-    this.requestHandler = (ir) => pureRequestHandler(ir, this.extraParams)
+
     const pureResponseHandler = createResponseHandler({
       ...this.params,
       reqSet: this.reqSet,
       _onReqsCompleted: () => this._resolveReqs(),
       _onReqsReject: (...args) => this._rejectReqs(...args),
     })
-    this.responseHandler = (ir) => pureResponseHandler(ir, this.extraParams)
 
     logger('Handlers created, params validated')
 
-    this._startPromise = makeDir(this.params.wd)
-      .then(() => {
-        logger(`Successfully created working directory ${this.params.wd}`)
+    // Intercepting all requests and respinding with mocks
+    this.removeRequestHandler = this.driver.onRequest((ir) => pureRequestHandler(ir, this.extraParams, this._mocks))
 
-        return this.page.setRequestInterception(true)
-      })
-      .then(() => {
-        // Intercepting all requests and respinding with mocks
-        this.page.on('request', this.requestHandler)
+    // Writing mocks on real responses to filesystem
+    this.removeResponseHandler = this.driver.onResponse((ir) => pureResponseHandler(ir, this.extraParams))
 
-        // Writing mocks on real responses to filesystem
-        this.page.on('response', this.responseHandler)
+    logger('_startPromise about to resolve (Request interception enabled, listeners added)')
 
-        logger('_startPromise about to resolve (Request interception enabled, listeners added)')
-      })
-      .catch((e) => {
-        logger(`Unknown error from puppeteer: ${e.message}`)
-      })
+    resolveStartPromise()
 
     return this._startPromise
   }
 
-  set(key, value) {
-    // @todo mockId collision in case of different wd
-    // if (key === 'wd') {
-    //   throw new Error(`you cannot change wd anywhere except mocker.start()!`)
-    // }
-
-    this.extraParams = this.extraParams || {}
-    this.extraParams[key] = value
-  }
-
-  unset(key) {
-    if (this.extraParams && typeof this.extraParams[key] !== 'undefined') {
-      this.extraParams[key] = undefined
+  public mock(filterArg, responseArg) {
+    const defaultResponse = {
+      status: 200,
+      headers: {},
+      body: {},
     }
-  }
+    let filter = filterArg
+    let response = responseArg
 
-  reset() {
-    this.extraParams = {}
-  }
-
-  mock(pattern: string) {
-    if (pattern.startsWith('/')) {
-      //
+    if (typeof filterArg === 'string') {
+      filter = { baseUrl: filterArg }
     }
+
+    if (!('body' in response)) {
+      response = { ...defaultResponse, body: responseArg }
+    }
+
+    const mock = [filter, response]
+
+    this._mocks.push(mock)
+
+    return () => this._mocks = this._mocks.filter(m => m !== mock)
   }
 
   /*
    * Resolves when all mocked connections are completed
    * @deprecated
    */
-  connections() {
+  public connections() {
     signale.warn('mocker.connections() is deprecated and will be removed')
     signale.warn('try to await explicit UI changes, not connections')
 
@@ -233,9 +224,8 @@ class Mocker {
     return this.reqsPromise || Promise.resolve()
   }
 
-  // application/x-www-form-urlencoded
-  spy(spyFilter: any) {
-    const spy = {}
+  public spy(spyFilter: any) {
+    const spy = { called: false }
 
     this._spies.push([spyFilter, spy])
 
@@ -245,12 +235,14 @@ class Mocker {
   /*
    * Waits for all connections to be completed and removes all handlers from the page
    */
-  stop() {
+  public async stop() {
     if (!this.alive) {
       // Async, because jest suppress Errors in `after` callbacks
       setTimeout(() => {
-        throw new Error(`Trying to stop already stopped mocker! Did you call 'mocker.stop()' twice?`)
+        signale.warn(`nothing to stop. Did you call 'mocker.stop()' twice?`)
       })
+
+      return
     }
 
     const t1 = setTimeout(() => {
@@ -278,52 +270,37 @@ class Mocker {
 
     let failed = false
 
-    // If any request is not mocked, return promise will reject
-    return this._startPromise
-      .then(() => {
-        if (this.params.awaitConnectionsOnStop) {
-          return this.connections()
-        }
-      })
-      .catch((err) => {
+    await this._startPromise
+
+    if (this.params.awaitConnectionsOnStop) {
+      try {
+        await this.connections()
+      } catch (err) {
         signale.error(`this.connections was rejected with error. Continue...`, err)
         failed = err
-      })
-      .then(() => {
-        logger('`Start` promise was resolved, `connections` promise was resolved or rejected')
+      }
+    }
 
-        clearTimeout(t1)
+    logger('`Start` promise was resolved, `connections` promise was resolved or rejected')
 
-        this.params.page.removeListener('request', this.requestHandler)
-        this.params.page.removeListener('response', this.responseHandler)
-        this.params.page.removeListener('close', this.onCloseHandler)
+    clearTimeout(t1)
 
-        return this.params.page.setRequestInterception(false)
-      })
-      .then(() => {
-        logger('requestInterception disabled, fail timeout cleared')
+    this.removeCloseHandler?.()
+    this.removeRequestHandler?.()
+    this.removeResponseHandler?.()
+    this.alive = false
 
-        this.params.pagesSet.delete(this.params.page)
+    // @todo how to solve that without closure?
+    // Must reject on `connections` reject, but must finish all tasks also
+    if (failed) {
+      signale.error(`rejecting mocker.stop() promise, because connections promise was rejected`)
 
-        this._startPromise = undefined
-        this.params = undefined
-        this.alive = false
-        this.onCloseHandler = null
+      logger(`About to exit from mocker.stop with reject`)
 
-        logger(`Mocker full stop. Period.`)
+      throw failed
+    }
 
-        // @todo how to solve that without closure?
-        // Must reject on `connections` reject, but must finish all tasks also
-        if (failed) {
-          signale.error(`Rejecting mocker.stop() promise, because connections promise was rejected`)
-
-          logger(`About to exit from mocker.stop with reject`)
-
-          return Promise.reject(failed)
-        }
-
-        logger(`About to exit from mocker.stop with resolve`)
-      })
+    logger(`about to exit from mocker.stop with resolve`)
   }
 }
 

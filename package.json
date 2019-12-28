@@ -1,6 +1,6 @@
 {
   "name": "teremock",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Easy to use test request mocker for puppeteer / mocha / karma",
   "main": "dist/index.js",
   "installConfig": {
@@ -40,6 +40,7 @@
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
     "jest": "^24.9.0",
+    "pending-xhr-puppeteer": "^2.1.0",
     "prettier": "1.19.1",
     "puppeteer": "^2.0.0",
     "rimraf": "^3.0.0",

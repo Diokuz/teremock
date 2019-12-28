@@ -23,7 +23,7 @@ app.get('/api', (req, res) => {
   setTimeout(() => {
     res.set('Access-Control-Allow-Origin', '*')
     res.json({ suggest: suggests[q] || q })
-  }, 300)
+  }, 30)
 })
 
 app.post('/api', (req, res) => {

@@ -8,12 +8,15 @@ import logger from './logger'
 import { humanize } from './words-hash'
 import { Naming } from './types'
 
+// Length of query string after which three-words-naming is switching on
+const MAX_QUERY_NAME_LENGTH = 25
+
 type Params = {
   url: string
   method?: string
   headers?: Record<string, string>
   body?: string
-  naming?: Naming
+  naming: Naming
 }
 
 /**
@@ -28,17 +31,18 @@ type Params = {
  * 1. blacklisted query and body params
  * 2. Any response data, including status, body and headers
  * 3. request headers (do you need that?)
+ * 4. cookies
  *
  * Order agnostic, so, `/foo=bar&baz=1` will have the same rid as `/baz=1&foo=bar`
  */
 const getRequestId = (params: Params) => {
   let url = params.url
-  let method = params.method || 'GET'
+  let method = (params.method || 'GET').toLowerCase()
   let headers = params.headers
   let body = params.body || ''
-  let queryWhitelist = params.naming?.query?.whitelist || []
-  let bodyBlacklist = params.naming?.body?.blacklist || []
-  let queryBlacklist = params.naming?.query?.blacklist || []
+  let queryWhitelist = params.naming.query?.whitelist || []
+  let bodyBlacklist = params.naming.body?.blacklist || []
+  let queryBlacklist = params.naming.query?.blacklist || []
 
   const urlObj = new URL(url)
   let bodyObj
@@ -107,7 +111,25 @@ const getRequestId = (params: Params) => {
 
   logger.debug('requestId: baseStr, baseStr.length', baseStr, baseStr.length)
 
-  return `${method.toLowerCase()}-${humanize(baseStr, 3)}`
+  const entries = [...urlObj.searchParams]
+
+  const queryStr: string = entries.reduce((acc: string[], [key, value]) => {
+    acc.push(`${key}-${value}`)
+
+    return acc
+  }, []).join('-')
+
+  let queryStrAscii = queryStr.toLowerCase().replace(/[^a-z0-9-]/g, '')
+
+  if (method === 'get' && !queryStr.length) {
+    return method
+  }
+
+  if (method === 'get' && queryStr.length < MAX_QUERY_NAME_LENGTH && queryStr.length === queryStrAscii.length) {
+    return `${method}-${queryStrAscii}`
+  }
+
+  return `${method}-${humanize(baseStr, 3)}`
 }
 
 export default getRequestId

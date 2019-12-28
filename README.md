@@ -1,3 +1,5 @@
+> WIP: this package is under construction! Use `puppeteer-request-mocker` for now.
+
 # teremock
 
 ## Do I need that thing?
@@ -18,19 +20,18 @@ await mocker.stop()
 
 ## How it works
 
-First, `teremock` intercepts puppeteers page requests and tries to find corresponding responses in the working directory. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response, instantly. If not – request will go to the real backend (see also: options.capturing.urls).
+First, `teremock` intercepts puppeteers page requests and tries to find corresponding responses in the working directory. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response. If not – request will go to the real backend (see also: options.capturing.urls).
 
 Second, `teremock` intercepts all responds, and writes them to the filesystem, if they are not on it already. In case of `CI` (if mock was not found), it uses mockMiss middleware, so you could be sure – all your requests are mocked (or build will fail otherwise).
 
-> Important to note! By default, teremock intercepts all requests, including html, assets, and even fonts requests! So, technically, you could mock not only requests from your testpage, but testpage itself! To prevent that, start mocker _after_ navigtion happened, or use `options.capture` to filter requests to be mocked. See `examples/mock-testpage-itself/` for details.
+> Important to note! By default, teremock intercepts all requests, including html, assets, and even fonts requests! So, technically, you could mock not only requests from your testpage, but testpage itself! To prevent that, start mocker _after_ navigtion to your testpage happened, or use `options.capture` to filter requests to be mocked. See `examples/mock-testpage-itself/` for details.
 
 ## Pipeline
 
 <img src="assets/pipeline.svg" />
 
-## API
+## options
 
-You could use `options`
 ```js
 mocker.start(options)
 ```
@@ -40,7 +41,6 @@ All options are optional (that's why they called so).
 const options = {
   // Absolute path to working directory, where you want to store mocks
   // path.resolve(process.cwd(), '__teremocks__') by default
-  // It is recommended to create separate directory for each test suite
   wd: path.resolve(__dirname, '__teremocks__'),
 
   // puppeteer page
@@ -48,8 +48,7 @@ const options = {
   page: page,
 
   // Determines which request is for mocking.
-  // By default – mocking is switched off, because there are many resources
-  // (like app.js, style.css, etc) which should not be mocked in 99% of cases
+  // All responses to be mocked by default
   capture: {
     // default: ['*'] (all requests)
     urls: ['my-backend.org/used/by/test']
@@ -58,10 +57,6 @@ const options = {
   },
 
   // If request is not to be mocked, it could be aborted or passed.
-  // Note: all navigation requests are passed for any `pass` value.
-  // By default, block any cross origin and non-GET same-origin requests
-  // This default value allows you to get assets, like js, css, images...
-  // without need to mock them
   pass: {
     urls: ['same-origin'],
     methods: ['get'],
@@ -85,14 +80,13 @@ const options = {
 
   // Run as CI if true. In CI mode storage will not try to save any mocks.
   // Default is `is-ci` package value (same as in Jest)
-  ci: require('is-ci'),
+  ci: false,
 
   // A middleware to call when mock is not found on the file system
   // Works only in CI mode
   // Possible values are:
   // 1) CODE (number) – respond with CODE http code for any unmocked request (e.g. 200)
-  // 2) 'throw' (string) – will throw an error
-  // 3) (next) => next(anyResponse) - respond with anyResponse object
+  // 2) (next) => next(anyResponse) - respond with anyResponse object
   // default value is: 500
   // Note: request is not available in the middleware function
   // Note: body must be a string (use JSON.stringify for objects)
@@ -102,28 +96,21 @@ const options = {
   // Warning: some tests could became flaky
   awaitConnectionsOnStop: false,
 
-  // Custom headers or/and body or/and status for ANY request from the mockList
-  // All keys in the object are optional (e.g. you could change only status code)
-  // Usefull with combination of mocker.set() method
-  // Warning! It is not working in the mocks generation mode! So, first, create your mocks.
-  // See also https://github.com/puppeteer/puppeteer/issues/599
-  response: {
-    headers: { 'Access-Control-Allow-Origin': '*' },
-    body: 'OK',
-    status: 200,
-  },
+  // Custom delay between request and response for mocked responses
+  // Default value is mockde ttfb value
+  ttfb: () => Math.random() * 1000
 }
 ```
 
 ### Mock files naming
 
-The name of mock file is consist of five parts: 1) `options.wd` 2) url directory 3) lowercased http method 4) three words 5) `.json` extension.
+The name of mock file is consist of five parts: 1) `options.wd` value 2) url directory 3) lowercased http method 4) three words 5) `.json` extension.
 
-The most important part is `4) three words`. These words are pseudorandom, and depends on a) request url (without query) b) query params c) body params.
+The most important part is `4) three words`. These words are pseudorandom, and depends on a) request url (without query) b) query params (sorted) c) body params (sorted).
 
 @todo examples
 
-In many cases it is important to be independent from some query and body params, which, for example, have random value. There are four different list for skipping some parameters, when calculating mock filename: whitelist and blacklist for query and body parameters. Here its typing:
+In many cases it is important to be independent from some query and body params, which, for example, have random value for each request (e.g. timestamp). There are four different list for skipping some parameters, when calculating mock filename: whitelist and blacklist for query and body parameters. Here its typing:
 
 ```ts
 type ListItem = string | string[]
@@ -141,11 +128,13 @@ const dynamicBodyParams = [
 ]
 
 mocker.start({
-  query: {
-    blacklist: dynamicQueryParams
-  },
-  body: {
-    blacklist: dynamicBodyParams
+  naming: {
+    query: {
+      blacklist: dynamicQueryParams
+    },
+    body: {
+      blacklist: dynamicBodyParams
+    }
   }
 })
 ```
@@ -176,20 +165,22 @@ It is not recommended to use `whitelist`, because you may encounting mocks filen
 
 It is not possible to use different lists for different urls simultaneously, but if you really need that, just create an issue!
 
+## API methods
 
+## mocker.start()
+
+Starts the mocker. Mocks for all requests matched `options.capture` will be used, but no mocks used before `mocker.start()` and after `mocker.stop()`
 
 Both `mocker.start()` and `mocker.stop()` return a `Promise`.
 
-## mocker.set()
+## mocker.mock(...)
 
-You could temporary change any option and then get back to its initial value.
+Sometimes it is more convenient to set mocks right in tests, without storing them to the file system. For that cases mocker.mock method exist.
 
-For example:
-
+Example:
 ```js
-mocker.set('response', { status: 427 })
-const result = await doRequest()
-expect(result).toBe('Server responded with an error, status code is 427')
-// note: headers and body will be taken from the mocks, only status code is changed
-mocker.unset('response) // or mocker.reset()
+mocker.mock(filter, response)
 ```
+After that line, all request, matched `filter`, will be mocked with `response`.
+
+> Note: latter `mocker.mock` filters have higher priority.

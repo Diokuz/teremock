@@ -6,6 +6,7 @@ const waitPort = require('wait-port')
 const rimraf = require('rimraf')
 const signale = require('signale')
 const sinon = require('sinon')
+const { PendingXHR } = require('pending-xhr-puppeteer')
 const mocker = require('../dist').default
 
 async function sleep(time) {
@@ -13,6 +14,10 @@ async function sleep(time) {
     setTimeout(resolve, time)
   })
 }
+
+afterEach(async () => {
+  await mocker.stop()
+})
 
 describe('teremock', () => {
   let page
@@ -43,8 +48,8 @@ describe('teremock', () => {
     process.kill(-server.pid)
   })
 
-  it('Generates mocks', async () => {
-    const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-app-diet-moon.json')
+  it('generates mocks', async () => {
+    const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-q-abcd.json')
 
     rimraf.sync(path.resolve(__dirname, '../__teremocks__'))
     await page.goto('http://localhost:3000')
@@ -65,6 +70,8 @@ describe('teremock', () => {
 
     // * wait for all connections to complete
     await mocker.connections()
+    // @todo fix connections and write tests already!
+    await sleep(500)
 
     // * At that point there must be mock files
     expect(fs.existsSync(mockFilePath)).toBe(true)
@@ -73,7 +80,7 @@ describe('teremock', () => {
     await mocker.stop()
   })
 
-  it('Generates mocks for POST request', async () => {
+  it('generates mocks for POST request', async () => {
     const mockFilePath = path.resolve(__dirname, '../__teremocks-post__/localhost-api/post-jupiter-kitten-iowa.json')
 
     rimraf.sync(path.resolve(__dirname, '../__teremocks-post__'))
@@ -104,7 +111,7 @@ describe('teremock', () => {
     await mocker.stop()
   })
 
-  it('Uses existing mocks', async () => {
+  it('uses existing mocks', async () => {
     await page.goto('http://localhost:3000')
 
     // * Starting mocker
@@ -115,16 +122,14 @@ describe('teremock', () => {
       },
     })
 
-    // * Typing `abc` → invoking request to `/api`, which are mocked
+    // * Typing `a` → invoking request to `/api`, which are mocked
     await page.click('#input')
-    await page.keyboard.type('abc')
+    await page.keyboard.type('a')
 
-    // * Because all requests are mocked, they respond instantly, without delay
-    // * So, page reaction on the response must be within 100 ms
-    // * Checking that reaction: there must be a text `green` in the suggest div
-    await page.waitForFunction(() => {
-      return document.querySelector('#suggest').innerText === '200 green'
-    }, { timeout: 100 })
+    // * Checking suggest in the div
+    await sleep(100)
+    const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+    expect(text).toBe('200 example')
 
     await mocker.stop()
   })
@@ -140,7 +145,7 @@ describe('teremock', () => {
       },
     })
 
-    // * Typing `abc` → invoking request to `/api`, which is not mocked
+    // * Typing `a` → invoking request to `/api`, which is not mocked
     await page.click('#input')
     await page.keyboard.type('a')
 
@@ -167,7 +172,7 @@ describe('teremock', () => {
       },
     })
 
-    // * Typing `abc` → invoking request to `/api`, which is not mocked
+    // * Typing `a` → invoking request to `/api`, which is not mocked
     await page.click('#input')
     await page.keyboard.type('a')
 
@@ -202,7 +207,7 @@ describe('teremock', () => {
     // await expect(mocker.stop()).rejects.toEqual('MONOFO')
   })
 
-  describe('mocker.set()', () => {
+  describe.skip('mocker.set()', () => {
     it('Generates mocks in the custom working directory', async () => {
       const mockFilePath = path.resolve(__dirname, '../__extra-mocks__/localhost-api/get-app-diet-moon.json')
 
@@ -268,7 +273,6 @@ describe('teremock', () => {
     afterEach(async () => await mocker.stop())
   })
 
-
   describe('mockMiss', () => {
     it('Do not throws in CI with mockMiss === 200', async () => {
       await page.goto('http://localhost:3000')
@@ -291,7 +295,7 @@ describe('teremock', () => {
       await expect(mocker.stop()).resolves.toEqual()
     })
 
-    it('Uses mockMiss middleware for response', async () => {
+    it('uses mockMiss middleware for response', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker with void capture.urls
@@ -332,11 +336,11 @@ describe('teremock', () => {
 
       // * Typing `x` → invoking request to `/api`, which is not mocked
       await page.click('#input')
-      await page.keyboard.type('abc')
+      await page.keyboard.type('a')
 
       // * Awaiting for middlware response and its body in suggest div
       await page.waitForFunction(() => {
-        return document.querySelector('#suggest').innerText === '200 green'
+        return document.querySelector('#suggest').innerText === '200 example'
       }, { timeout: 4000 })
 
       // * Expecting `stop` promise to resolve
@@ -345,15 +349,21 @@ describe('teremock', () => {
   })
 
   describe('options.pass', () => {
-    it('blocks cross origin requests by default', async () => {
+    it('blocks cross origin requests out of capture.urls', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker with void `pass`
-      await mocker.start({ page })
+      await mocker.start({
+        page,
+        capture: {
+          urls: ['http://localhost:3000'], // not localhost:4000!
+        },
+      })
 
       // * Typing `a` → invoking cors request to `/api`, which must be blocked
       await page.click('#input-cors')
       await page.keyboard.type('a')
+      // await sleep(99999)
 
       // * Awaiting for suggest innerText, which indicates wether request was blocked
       await page.waitForFunction(() => {
@@ -361,11 +371,14 @@ describe('teremock', () => {
       }, { timeout: 1000 })
     })
 
-    it('blocks same origin non-GET requests by default', async () => {
+    it('blocks same origin non-GET requests out of capture.urls', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker with void `pass`
-      await mocker.start({ page })
+      await mocker.start({
+        page,
+        capture: { urls: [] }, // nothing for capture
+      })
 
       // * Typing `a` → invoking POST request to `/api`, which must be blocked
       await page.click('#input-post')
@@ -381,7 +394,11 @@ describe('teremock', () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker with void `pass`
-      await mocker.start({ page, pass: { urls: ['http://localhost:4000'], methods: ['post'] } })
+      await mocker.start({
+        page,
+        capture: { urls: [] }, // nothing to capture
+        pass: { urls: ['http://localhost:4000'], methods: ['post'] },
+      })
 
       // * Typing `a` → invoking CORS request to `/api`, which must not be blocked
       await page.click('#input-cors')
@@ -397,7 +414,11 @@ describe('teremock', () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker with void `pass`
-      await mocker.start({ page, pass: { urls: ['http://localhost:4000'], methods: ['post'] } })
+      await mocker.start({
+        page,
+        capture: { urls: [] }, // nothing to capture
+        pass: { urls: ['http://localhost:4000'], methods: ['post'] },
+      })
 
       // * Typing `a` → invoking CORS request to `/api?q=a`, which must not be blocked
       await page.click('#input-cors')
@@ -409,29 +430,16 @@ describe('teremock', () => {
       }, { timeout: 1000 })
     })
 
-    it('navigation request should not be blocked', async () => {
-      // * Starting mocker without `pass`
-      await mocker.start({ page })
-
-      // * Goto 'about:blank' → 'localhost:3000' some url – that url should not be blocked
-      await page.goto('http://localhost:3000')
-      await page.waitFor('#suggest')
-
-      // * Goto 'localhost:3000' → 'localhost:4000/text' some url – that url should not be blocked
-      await page.goto('http://localhost:4000/text')
-      await page.waitFor('#text')
-    })
-
     // * stopping the mocker
     afterEach(async () => await mocker.stop())
   })
 
   describe('options.capture', () => {
-    it('capture GET request for /api by default', async () => {
+    it('capture GET request for /api', async () => {
       await page.goto('http://localhost:3000')
 
       // Custom storage for spying (fs wont be used)
-      const storage = { get: sinon.spy(async () => '') }
+      const storage = { set: sinon.spy(async () => ''), has: () => false }
       const capture = { urls: ['http://localhost:3000/api'] }
 
       // * Starting mocker with void `pass`
@@ -442,16 +450,16 @@ describe('teremock', () => {
       await page.keyboard.type('a')
       await sleep(200)
 
-      // * storage.get/set must be called, since the request is capturable
-      expect(storage.get.calledOnce).toBe(true)
-      expect(storage.get.getCall(0).args[0]).toBe('localhost-api--get-app-diet-moon')
+      // * storage.set must be called, since the request is capturable
+      expect(storage.set.calledOnce).toBe(true)
+      expect(storage.set.getCall(0).args[0]).toBe('localhost-api--get-q-a')
     })
 
     it('dont capture GET request for /api when methods are ["post"]', async () => {
       await page.goto('http://localhost:3000')
 
       // Custom storage for spying (fs wont be used)
-      const storage = { get: sinon.spy(async () => '') }
+      const storage = { has: sinon.spy(async () => '') }
       const capture = {
         urls: ['http://localhost:3000/api'],
         methods: ['post']
@@ -465,37 +473,151 @@ describe('teremock', () => {
       await page.keyboard.type('a')
       await sleep(200)
 
-      // * storage.get/set must be called, since the request is capturable
-      expect(storage.get.calledOnce).toBe(false)
+      // * storage.has must not be called, since the request is not capturable
+      expect(storage.has.called).toBe(false)
     })
 
     afterEach(async () => await mocker.stop())
   })
 
-  describe.only('mocker.spy', () => {
-    it('simple case', async () => {
+  describe('mocker.spy', () => {
+    it('mocker.spy simple case', async () => {
       await page.goto('http://localhost:3000')
 
-      // * Starting mocker with void `pass`
+      // * Starting mocker
       await mocker.start({ page })
-      // const spy = mocker.spy({
-      //   location: 'http://localhost:3000',
-      //   query: { q: 'ab' },
-      // })
+      const spy = mocker.spy({
+        url: 'http://localhost:3000/api',
+        query: { q: 'ab' },
+      })
+
+      // * Typing `a` → invoking GET request to `/api`, which is mocked with inline mock
+      await page.click('#input')
+      await page.keyboard.type('a')
+      await sleep(35)
+      expect(spy.called).toBe(false)
+
+      await page.keyboard.type('b')
+      await sleep(35)
+      expect(spy.called).toBe(true)
+
+      // * Awaiting for suggest innerText, which indicates wether request was blocked
+      await sleep(35)
+      const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+
+      expect(text).toBe('200 world')
+      await mocker.stop()
+    })
+  })
+
+  describe('mocker.mock', () => {
+    it('mocker.mock simple case', async () => {
+      const pendingXHR = new PendingXHR(page)
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await mocker.start({ page })
+
+      // * Create inline mock
+      mocker.mock('http://localhost:3000/api', {
+        suggest: 'mocker.mock suggest'
+      })
+
+      // * Invoking GET request to `/api`
+      await page.click('#button')
+      await sleep(50)
+
+      // * Awaiting for suggest request to finish
+      await pendingXHR.waitForAllXhrFinished()
+
+      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      expect(text).toBe('200 mocker.mock suggest')
+      await mocker.stop()
+    })
+
+    it('remove handler', async () => {
+      const pendingXHR = new PendingXHR(page)
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await mocker.start({ page })
+
+      // * Create inline mock
+      const unmock = mocker.mock('http://localhost:3000/api', {
+        suggest: 'mocker.mock suggest'
+      })
+      unmock()
+
+      // * Invoking GET request to `/api`
+      await page.click('#button')
+
+      // * Awaiting for suggest request to finish
+      await pendingXHR.waitForAllXhrFinished()
+      await sleep(10)
+
+      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      expect(text).toBe('200 mocker.mock suggest')
+      await mocker.stop()
+    })
+
+    it('ttfb', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await mocker.start({ page })
+
+      // * Create instant inline mock
+      mocker.mock('http://localhost:3000/api', { suggest: 'mocker.mock suggest', ttfb: 0 })
 
       // * Typing `a` → invoking GET request to `/api`, which is mocked with inline mock
       await page.click('#input')
       await page.keyboard.type('a')
 
-      // expect(spy.called).toBe(false)
-
-      await page.keyboard.type('b')
-      // expect(spy.called).toBe(true)
-      await sleep(310)
-
-      // * Awaiting for suggest innerText, which indicates wether request was blocked
+      // * Awaiting less than initial sleep (30 ms), but more than inline mocked sleep (0 ms)
+      await sleep(1)
       const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
-      expect(text).toBe('200 world')
+      expect(text).toBe('200 mocker.mock suggest')
+
+      await mocker.stop()
+    })
+
+    it('race condition', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await mocker.start({ page })
+      mocker.mock({
+        url: 'http://localhost:3000/api',
+        query: { q: 'a' }
+      }, {
+        body: { suggest: 'custom A' },
+        ttfb: 100,
+      })
+
+      mocker.mock({
+        url: 'http://localhost:3000/api',
+        query: { q: 'ab' }
+      }, {
+        body: { suggest: 'custom AB' },
+        ttfb: 0,
+      })
+
+      // * Typing `ab` → invoking two request to `/api`, which are inline mocked
+      await page.click('#input')
+      await page.keyboard.type('ab')
+
+      // * Checking suggest in the div – second respond must return, but not the first
+      await sleep(50)
+      const text1 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      expect(text1).toBe('200 custom AB')
+
+      // * Waiting for the first response – it will overwrite the result of the second response
+      // * because of race condition
+      await sleep(150)
+      const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      expect(text2).toBe('200 custom A')
+
+      await mocker.stop()
     })
   })
 })

@@ -3,7 +3,7 @@ import { Naming } from './types'
 
 type GetMockIdParams = {
   url: string
-  naming?: Naming
+  naming: Naming
   method?: string
   body?: string
   headers?: Record<string, string>

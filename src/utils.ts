@@ -1,6 +1,6 @@
 import { URL } from 'url'
 import debug from 'debug'
-import { Capture } from './types'
+import { Capture, Request } from './types'
 
 const logger = debug('teremock:utils')
 
@@ -71,22 +71,46 @@ export function parseUrl(url) {
   }
 }
 
-export function isSpyMatched(spyFilter, request) {
-  const { query, method, location } = request
+export function isFilterMatched(matchFilter, request: Request) {
+  // location have no query params, url has
+  const { method, url } = request
+  const query = getQuery(url)
+  const requestLocation = (url ?? '').split(/[?#]/)[0].toLowerCase()
 
-  return Object.keys(spyFilter).reduce((acc, key) => {
+  logger(`isFilterMatched url`, matchFilter, request)
+
+  const isMatched = Object.keys(matchFilter).reduce((acc, key) => {
     switch (key) {
       case 'method':
-        return acc && spyFilter[key] === method
-      case 'location':
-        return acc && location.startsWith(spyFilter[key])
+        return acc && matchFilter[key].toLowerCase() === method.toLowerCase()
+      case 'baseUrl':
+        return acc && requestLocation.startsWith(matchFilter[key].toLowerCase())
+      case 'url':
+        return acc && requestLocation === matchFilter[key].toLowerCase()
       case 'query':
         return (
           acc &&
-          Object.keys(spyFilter[key]).reduce((a, k) => {
-            return a && spyFilter[key][k] === query[k]
+          Object.keys(matchFilter[key]).reduce((a, k) => {
+            return a && matchFilter[key][k] === query[k]
           }, true)
         )
     }
   }, true)
+
+  return isMatched
+}
+
+export const isMockMatched = isFilterMatched
+export const isSpyMatched = isFilterMatched
+
+export function blacklist(source: Record<string, any>, list: string[]) {
+  const set = new Set(list.map(l => l.toLowerCase()))
+
+  return Object.keys(source).reduce((acc, key) => {
+    if (!set.has(key.toLowerCase())) {
+      acc[key] = source[key]
+    }
+
+    return acc
+  }, {})
 }

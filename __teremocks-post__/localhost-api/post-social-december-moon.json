@@ -1,7 +1,7 @@
 {
   "request": {
-    "method": "POST",
     "url": "http://localhost:3000/api",
+    "method": "POST",
     "headers": {
       "accept": "application/json",
       "referer": "http://localhost:3000/",
@@ -14,6 +14,7 @@
     }
   },
   "response": {
+    "url": "http://localhost:3000/api",
     "status": 200,
     "headers": {
       "access-control-allow-origin": "*",
@@ -22,6 +23,7 @@
     },
     "body": {
       "suggest": "book"
-    }
+    },
+    "ttfb": 110
   }
 }

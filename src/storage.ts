@@ -1,4 +1,4 @@
-import fs from 'fs'
+import { promises as fs } from 'fs'
 import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
@@ -6,90 +6,110 @@ import signale from './logger'
 
 const loggerGet = debug('teremock:storage:get')
 const loggerSet = debug('teremock:storage:set')
+const loggerHas = debug('teremock:storage:has')
 
-export const getFileName = ({ wd, mockId }: { wd: string; mockId: string }) => {
+export const getFileName = ({ wd, mockId }: { wd: string; mockId: string }): string => {
   return path.resolve(wd, mockId.replace('--', path.sep) + '.json')
 }
 
-const set = (mockId: string, { body, url, ci }, { wd }: { wd: string }) => {
-  const absFileName = getFileName({ mockId, wd })
-  loggerSet(`Entering storage.set with fn === ${mockId}`)
-  const targetDir = path.dirname(absFileName)
-
-  return makeDir(targetDir).then(() => {
-    loggerSet(`Successfully checked/created targetDir ${targetDir}`)
-
-    return new Promise((resolve, reject) => {
-      let fileExists = fs.existsSync(absFileName)
-
-      if (!fileExists) {
-        fileExists = fs.existsSync(mockId)
-      }
-
-      if (!fileExists) {
-        loggerSet(`File does not exists ${mockId}`)
-
-        if (ci) {
-          loggerSet(`Url "${url}" wasnt mocked! Rejecting and exiting storage.set.`)
-          reject(Error(`Mock cannot be saved in CI mode.`))
-
-          return
-        }
-
-        signale.set(`Writing mock for url "${url}"`)
-        signale.set(`to file "${absFileName}"`)
-
-        fs.writeFile(absFileName, body, (err) => {
-          if (err) {
-            signale.error(`Failed to write new file ${absFileName}`)
-
-            reject(err)
-          }
-
-          signale.success(`Successfully wrote new file ${absFileName}`)
-
-          resolve({ mockId, new: true })
-        })
-      } else {
-        loggerSet(`File already exists, do nothing ${mockId}`)
-
-        resolve({ mockId, new: false })
-      }
-    })
-  })
+type Params = {
+  ci: boolean,
+  wd: string,
 }
 
-const get = (mockId: string, { wd }: { wd: string }) => {
-  const absFileName = getFileName({ mockId, wd })
+type Opts = {
+  wd?: string
+}
 
-  loggerGet(`about to read file ${absFileName}`)
+type Json = {
+  request: {
+    url: string,
+  },
+  response: any,
+}
 
-  return new Promise((resolve, reject) => {
-    try {
-      fs.readFile(absFileName, 'utf8', (err, data) => {
-        if (err) {
-          if (err.code === 'ENOENT') {
-            loggerGet(`File does not exist ${absFileName}`)
-          } else {
-            signale.error(`Fail to read the file ${absFileName}`, err)
-          }
+type GetRet = {
+  request: Request
+  response: Response
+}
 
-          reject({ mockId, err })
-        } else {
-          signale.get(`successfully read the file ${absFileName}`)
+export default class Storage {
+  private wd: string
 
-          resolve(data)
-        }
-      })
-    } catch (err) {
-      signale.error(`unexpected failure of file reading ${absFileName}`, err)
+  constructor({ wd }: Params) {
+    this.wd = wd
+  }
 
-      reject({ mockId, err })
+  async set(mockId: string, json: Json, opts?: Opts): Promise<void> {
+    loggerSet(`entering storage.set with mockId "${mockId}"`)
+
+    const wd = opts?.wd ?? this.wd
+    const absFileName = getFileName({ mockId, wd })
+    const targetDir = path.dirname(absFileName)
+    const content = JSON.stringify(json, null, '  ')
+
+    await makeDir(targetDir)
+
+    loggerSet(`successfully checked/created targetDir ${targetDir}`)
+
+    if (await this.has(mockId)) {
+      loggerSet(`file already exists, overwriting ${mockId}`)
     }
-  })
-}
 
-export default {
-  set,
-  get,
+    signale.set(`writing mock for url "${json?.request?.url}"`)
+    signale.set(`to file "${absFileName}"`)
+
+    try {
+      await fs.writeFile(absFileName, content)
+      signale.success(`successfully wrote new file ${absFileName}`)
+    } catch (e) {
+      signale.error(`failed to write new file ${absFileName}`)
+      throw e
+    }
+  }
+
+  // only for tests
+  _getFn(mockId, opts?: Opts): string {
+    const wd = opts?.wd ?? this.wd
+    return getFileName({ mockId, wd })
+  }
+
+  async get(mockId: string, opts?: Opts): Promise<GetRet> {
+    const absFileName = this._getFn(mockId, opts)
+
+    loggerGet(`about to read file ${absFileName}`)
+
+    try {
+      const data = JSON.parse(await fs.readFile(absFileName, 'utf8'))
+      loggerGet(`successfully read the file ${absFileName}`)
+      return data
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        loggerGet(`fail to read the file (ENOENT) ${absFileName}`, err.message)
+      } else {
+        signale.error(`fail to read the file ${absFileName} for some other reason`, err)
+      }
+
+      throw err
+    }
+  }
+
+  async has(mockId: string, opts?: Opts): Promise<boolean> {
+    const absFileName = this._getFn(mockId, opts)
+
+    loggerHas(`about to check file ${absFileName}`)
+
+    let fileExists = false
+
+    try {
+      await fs.access(absFileName)
+
+      fileExists = true
+      loggerHas(`file "${absFileName}" exists`)
+    } catch (e) {
+      loggerHas(`file "${absFileName}" does not exists`)
+    }
+
+    return fileExists
+  }
 }

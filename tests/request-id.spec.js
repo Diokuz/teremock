@@ -1,18 +1,45 @@
 const getRequestId = require('../dist/request-id').default
 
-it('Generates same names for same request', () => {
-  const name1 = getRequestId({ url: 'http://example.com' })
-  const name2 = getRequestId({ url: 'http://example.com' })
+const defaultNaming = {}
 
-  expect(name1).toBe('get-october-leopard-owe')
+it('Generates same names for same request', () => {
+  const name1 = getRequestId({ url: 'http://example.com', naming: defaultNaming })
+  const name2 = getRequestId({ url: 'http://example.com', naming: defaultNaming })
+
+  expect(name1).toBe('get')
   expect(name2).toBe(name1)
 })
 
-it('Generates prefix according to method', () => {
-  const nameGet = getRequestId({ url: 'http://example.com', method: 'gEt' })
-  const namePatch = getRequestId({ url: 'http://example.com', method: 'PATCH' })
+it('returns `get` when no query params', () => {
+  const name = getRequestId({ url: 'http://example.com', naming: defaultNaming })
 
-  expect(nameGet).toBe('get-october-leopard-owe')
+  expect(name).toBe('get')
+})
+
+it('returns `get-foo-bar` when some query params', () => {
+  const name = getRequestId({ url: 'http://example.com?foo=bar', naming: defaultNaming })
+
+  expect(name).toBe('get-foo-bar')
+})
+
+it('sorts query params', () => {
+  const name1 = getRequestId({ url: 'http://example.com?foo=bar&alice=bob', naming: defaultNaming })
+  const name2 = getRequestId({ url: 'http://example.com?alice=bob&foo=bar', naming: defaultNaming })
+
+  expect(name1).toBe(name2)
+})
+
+it('returns three-words when long query', () => {
+  const name = getRequestId({ url: 'http://example.com?f12345678901234567890bar=123', naming: defaultNaming })
+
+  expect(name).toBe('get-diet-video-delta')
+})
+
+it('Generates prefix according to method', () => {
+  const nameGet = getRequestId({ url: 'http://example.com', method: 'gEt', naming: defaultNaming })
+  const namePatch = getRequestId({ url: 'http://example.com', method: 'PATCH', naming: defaultNaming })
+
+  expect(nameGet).toBe('get')
   expect(namePatch).toBe('patch-october-leopard-owe')
 })
 
@@ -179,5 +206,5 @@ it('Nonexistent level of nested body parameters does not throw an error', () => 
 })
 
 it('Non-json post body does not throws an error', () => {
-  getRequestId({ url: 'http://example.com', body: 'post_body' })
+  getRequestId({ url: 'http://example.com', body: 'post_body', naming: defaultNaming })
 })
