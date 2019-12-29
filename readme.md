@@ -2,7 +2,7 @@
 
 ## Do I need teremock?
 
-If you are writing puppeteer tests, and you want to mock your network responses easily – probably yes.
+If you write puppeteer tests, and you want to mock your network responses easily – probably yes.
 
 ## How to use
 
@@ -90,22 +90,24 @@ const options = {
 
 Interceptor – is a big conception in `teremock`. Interceptor is an object, which have two different groups of properties:
 
-1. Matcher group: these properties determines, whether to intercept particular request, or not.
+1. Matcher group: these properties determine, whether to intercept particular request, or not.
 2. Provider group: what to do with request: 1) pass to real backend 2) respond with inline resoponse 3) try to find response mock on file system.
 
 Interceptor is used, if _all_ matchers are matched against request. So, if one matcher is not matched, given interceptor will not be used.
+
+It is recommended to have interceptors for all possible (for your test app) requests. All non-covered requests will be aborted.
 
 ### Matcher group properties
 
 #### interceptor.`url` [string]
 
-A string, which defines urls to match. It works when `request.url.includes(url) === true` – so, `ample.com` will match both `http://exampe.com` as well as `https://not-example.com/api?foo-bar`. Note: prefer not to place query params to urls, because they could be randomly sorted in real request.
+A string, which defines urls to match. It works when `request.url.includes(url) === true` – so, `ample.com` will match both `http://exampe.com` and `https://not-example.com/api?foo-bar`. Note: prefer not to place query params to urls, because they could be randomly sorted in real request.
 
-Default value: '*'.
+Default value: `*`.
 
 #### interceptor.`resouceTypes` [string]
 
-Comma-separated list of puppeteer [request types](https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestresourcetype). By default, only `xhr` and `fetch` request are mockable, but there many situation where you may want to mock html documents, js files and more.
+Comma-separated list of puppeteer [request resource types](https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestresourcetype). By default, only `xhr` and `fetch` request are mockable, but there are many situation where you may want to mock html documents, js files and, for example, the whole page of the facebook auth.
 
 Default value: `xhr,fetch`.
 
@@ -113,7 +115,7 @@ Default value: `xhr,fetch`.
 
 Unsorted one-level object of query params. Missing params will not affect the interception. Example: `{ foo: 'bar' }` will match `<url>?foo=bar` as well as `<url>?alice=bob&foo=bar&baz=1`.
 
-Duplicated values (e.g. `?foo=bar&foo=baz`) are not supported now.
+Duplicated values (e.g. `?foo=bar&foo=baz`) are not supported.
 
 Default value: `{}`.
 
@@ -153,26 +155,7 @@ Default value: `null`.
 
 See [Change naming rules](#change naming rules) below.
 
-### Examples
-
-```ts
-{ url: '/api', query: { foo: 'bar' } }
-```
-Will match any url, containing `/api`, and query param `foo=bar`. Response will be extracted from fs, if exists.
-
-```ts
-{ response: { status: 404 } }
-```
-Will respond 404 status code for any request.
-
-```ts
-{
-  methods: 'option',
-  response: { headers: { 'allow-origin': '*' }, ttfb: 354 },
-  resourceTypes: `xhr,document`
-}
-```
-Will respond `allow origin: *` for any `option` _xhr_ and _document_ request with 354 ms delay.
+[Interceptor examples](./examples/interceptors.js).
 
 ## Mock files naming
 
