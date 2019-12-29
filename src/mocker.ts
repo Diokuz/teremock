@@ -103,7 +103,6 @@ class Mocker {
           signale.error(`That is bad, mkay? Because you have a race: server response and navigation`)
           signale.error(`That will lead to heisenberg MONOFO errors in case when response will win the race`)
           signale.error(`Alive connections:\n${[...this.reqSet]}`)
-          throw new Error(`Some connections was not completed, but navigation happened.`)
         }
         this.reqSet.clear()
         this._resolveReqs()
@@ -161,8 +160,8 @@ class Mocker {
     }
 
     this._interceptors = {
-      ...this._interceptors,
       [name]: interceptor,
+      ...this._interceptors,
     }
 
     // @todo support restoring overwritten names

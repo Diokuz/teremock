@@ -1,5 +1,4 @@
-import debug from 'debug'
-import signale from './logger'
+import signale, { debug } from './logger'
 import { findInterceptor, parseUrl } from './utils'
 import getMockId from './mock-id'
 import { Options, Response, Storage, Interceptor } from './types'
@@ -40,7 +39,7 @@ async function respondWithDelay(respond, resp: Response, interceptor: Intercepto
 const getBodyStr = (body): string => typeof body === 'string' ? body : JSON.stringify(body)
 
 export default function createHandler(initialParams) {
-  logger('Creating request handler')
+  logger('creating request handler')
 
   return async function handleRequest({ request, abort, next, respond }, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
@@ -59,45 +58,48 @@ export default function createHandler(initialParams) {
       return
     }
 
+    const bodyStr = getBodyStr(request.body)
+    const mockId = getMockId({ ...request, naming: interceptor.hash, name: interceptor.name, body: bodyStr })
+    const mog = debug(`teremock:${mockId}`)
+
+    mog(`interceptor found`, interceptor)
+
     if (interceptor.pass) {
-      logger(`» mock.pass is true, sending it to real server`)
+      mog(`» mock.pass is true, sending it to real server next(interceptor)`)
       next(interceptor)
       return
     }
 
     if (interceptor.response) {
-      logger(`» mock.response defined, responding with it`)
+      mog(`» mock.response defined, responding with it`)
       await respondWithDelay(respond, interceptor.response, interceptor)
       return
     }
 
     // mocks from storage
 
-    const bodyStr = getBodyStr(request.body)
-    const mockId = getMockId({ ...request, naming: interceptor.hash, name: interceptor.name, body: bodyStr })
-
     params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body })
     reqSet.add(mockId)
-    debug('teremock:connections:add')(mockId, Array.from(reqSet))
+    mog('» reqSet is', Array.from(reqSet))
 
-    logger(`» trying to get mock with id "${mockId}"`)
+    mog(`» trying to get mock with id "${mockId}"`)
 
     if (await storage.has(mockId)) {
-      logger(`» mock "${mockId}" exists!`)
+      mog(`» mock "${mockId}" exists!`)
 
       const mock = await storage.get(mockId)
       const resp = { ...mock.response, ...globalResp }
 
-      logger(`« successfully read from "${mockId}", responding`)
+      mog(`» successfully read from "${mockId}", responding`)
 
       await respondWithDelay(respond, resp, interceptor)
     } else {
-      logger(`» mock does not exist!`)
+      mog(`» mock does not exist!`)
 
       if (ci) {
         signale.warn(`mock file not found in ci mode, url is "${request.url}"`)
       } else {
-        logger('« about to next()...')
+        mog('» about to next()...')
         next(interceptor)
       }
     }

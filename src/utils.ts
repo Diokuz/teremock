@@ -1,7 +1,7 @@
 import { URL } from 'url'
 import debug from 'debug'
 import { Request, Options, UserOptions, Interceptor, UserInterceptor } from './types'
-import { DEFAULT_INTERCEPTOR } from './consts'
+import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 
 const logger = debug('teremock:utils')
 const loggerint = debug('teremock:utils:interceptor')
@@ -11,6 +11,7 @@ type InParams = {
   request: {
     url: string
     method: string
+    resourceType?: string
   }
 }
 
@@ -23,12 +24,11 @@ export const hasMatch = (arr, str) => {
   })
 }
 
-// @todo tests
 export const findInterceptor = ({ interceptors, request }: InParams): Interceptor | null => {
-  const { url, method } = request
+  const { url, method, resourceType = 'xhr' } = request
   loggerint(`entering findInterceptor with args`, interceptors, request)
 
-  const matchedMockKey = Object.keys(interceptors).reverse().find((key) => {
+  const matchedMockKey = Object.keys(interceptors).find((key) => {
     loggerint(`checking key`, key)
     const interceptor = interceptors[key] as Interceptor
 
@@ -36,7 +36,7 @@ export const findInterceptor = ({ interceptors, request }: InParams): Intercepto
       const value = interceptor[key]
 
       // Nothing to compare === wildcard (for given `key`)
-      if (typeof value === 'undefined' || value === '*') {
+      if (typeof value === 'undefined' || value === '*' || (value?.has?.('*'))) {
         return acc
       }
 
@@ -54,6 +54,8 @@ export const findInterceptor = ({ interceptors, request }: InParams): Intercepto
               return a && value[k] === query[k]
             }, true)
           )
+        case 'resourceTypes':
+          return acc && value.has(resourceType.toLowerCase())
         default:
           return acc
       }
@@ -150,25 +152,24 @@ export function blacklist(source: Record<string, any>, list: string[]) {
   }, {})
 }
 
-// function isResponse(maybeResponse: Response | Object | void): maybeResponse is Response {
-//   return !!maybeResponse && 'body' in maybeResponse
-// }
-
-export function userInterceptorToInterceptor(userInterceptor: UserInterceptor, nameArg: string): Interceptor {
-  const name = userInterceptor.name || nameArg
+export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg: string): Interceptor {
+  const name = uint.name || nameArg
   const validName = name.replace(/[^a-z0-9_-]+/, '')
 
   if (name !== validName) {
     throw new Error(`invalid mocks name "${name}"! only letters, digits, - and _ are allowed.`)
   }
 
-  const defaultMethods = DEFAULT_INTERCEPTOR.methods
-  const methods = typeof userInterceptor.methods === 'string' ? new Set(userInterceptor.methods.split(',')) : defaultMethods
+  const defaultMethods = DEFAULT_INTERCEPTOR_CAPTURE.methods
+  const defaultResourceTypes = DEFAULT_INTERCEPTOR_CAPTURE.resourceTypes
+  const methods = typeof uint.methods === 'string' ? new Set(uint.methods.toLowerCase().split(',')) : defaultMethods
+  const resourceTypes = typeof uint.resourceTypes === 'string' ? new Set(uint.resourceTypes.toLowerCase().split(',')) : defaultResourceTypes
 
   return {
-    ...DEFAULT_INTERCEPTOR,
-    ...userInterceptor,
+    ...DEFAULT_INTERCEPTOR_CAPTURE,
+    ...uint,
     methods,
+    resourceTypes,
     name,
   }
 }

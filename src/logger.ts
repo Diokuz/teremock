@@ -1,4 +1,5 @@
 import { Signale } from 'signale'
+import debug from 'debug'
 
 let logLevel = process.env.DEBUG_LL || 'info'
 let resultLogLevel = 'debug'
@@ -49,3 +50,13 @@ const options = {
 const logger = new Signale(options)
 
 export default logger
+
+const loggersMap = {}
+
+export function debug(key) {
+  if (!loggersMap[key]) {
+    loggersMap[key] = debug(key)
+  }
+
+  return loggersMap[key]
+}

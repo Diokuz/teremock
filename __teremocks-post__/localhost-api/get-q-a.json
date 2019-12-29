@@ -5,7 +5,8 @@
     "headers": {
       "referer": "http://localhost:3000/",
       "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36"
-    }
+    },
+    "resourceType": "fetch"
   },
   "response": {
     "url": "http://localhost:3000/api?q=a",
@@ -18,6 +19,6 @@
     "body": {
       "suggest": "example"
     },
-    "ttfb": 42
+    "ttfb": 38
   }
 }

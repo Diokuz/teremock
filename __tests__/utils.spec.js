@@ -7,7 +7,19 @@ describe('findInterceptor', () => {
     const request = { url: 'http://example.com', method: 'get' }
     const found = findInterceptor({ interceptors, request })
 
-    expect(found).toBe(interceptors['*'])
+    expect(found).toBe(interceptors.capture)
+  })
+
+  it('* resourceTypes: only xhr and fetch', () => {
+    const interceptors = DEFAULT_OPTIONS.interceptors
+    let request = { url: 'http://example.com', method: 'get', resourceType: 'xhr' }
+    // expect(findInterceptor({ interceptors, request })).toBe(interceptors.capture)
+
+    // request = { url: 'http://example.com', method: 'get', resourceType: 'fetch' }
+    // expect(findInterceptor({ interceptors, request })).toBe(interceptors.capture)
+
+    request = { url: 'http://example.com', method: 'get', resourceType: 'other' }
+    expect(findInterceptor({ interceptors, request })).toBe(interceptors.pass)
   })
 
   it('* with query', () => {
@@ -15,17 +27,17 @@ describe('findInterceptor', () => {
     const request = { url: 'http://example.com', method: 'get', query: { foo: 'bar' } }
     const found = findInterceptor({ interceptors, request })
 
-    expect(found).toBe(interceptors['*'])
+    expect(found).toBe(interceptors.capture)
   })
 
-  it('two matched interceptors → latter should be taken', () => {
-    const interceptor = DEFAULT_OPTIONS.interceptors['*']
+  it('two matched interceptors → first should be taken', () => {
+    const interceptor = DEFAULT_OPTIONS.interceptors.capture
     const one = { ...interceptor }
     const two = { ...interceptor }
     const request = { url: 'http://example.com', method: 'get'}
     const found = findInterceptor({ interceptors: { one, two }, request })
 
-    expect(found).toBe(two)
+    expect(found).toBe(one)
   })
 
   it('mismatched method', () => {
@@ -215,7 +227,7 @@ describe('userOptionsToOptions', () => {
       ...DEFAULT_OPTIONS,
       interceptors: {
         api: {
-          ...DEFAULT_OPTIONS.interceptors['*'],
+          ...DEFAULT_OPTIONS.interceptors.capture,
           ...apiMock,
           name: 'api',
           methods: new Set(apiMock.methods.split(',')),

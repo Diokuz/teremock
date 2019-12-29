@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang='ru'>
+  <head>
+    <meta charset='utf-8'>
+    <style>
+      html, body {
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        margin: 0;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        justify-content: center;
+        align-items: center;
+        background: #eee;
+      }
+      .wrap {
+        display: flex;
+        flex-direction: column;
+      }
+      .suggest {
+        margin: 8px 0 16px;
+        color: #777;
+      }
+      input {
+        font-size: 40px;
+        padding: 10px 24px;
+        background: #fff;
+        border: 0;
+        box-shadow: 0 0 1px #aaa;
+      }
+      input:focus {
+        outline: none;
+      }
+    </style>
+
+    <title>Teremock // Abort response example</title>
+  </head>
+
+  <body>
+    <button id='button'>Click to start</button>
+    <script>
+      const button = document.querySelector('#button')
+
+      button.addEventListener('click', (e) => {
+        fetch(`/api?q=click`)
+          .then((re) => {
+            button.innerText = `clicked`
+          })
+      })
+    </script>
+  </body>
+</html>

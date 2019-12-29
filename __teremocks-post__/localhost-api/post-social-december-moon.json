@@ -11,7 +11,8 @@
     },
     "body": {
       "q": "abcd"
-    }
+    },
+    "resourceType": "fetch"
   },
   "response": {
     "url": "http://localhost:3000/api",
@@ -24,6 +25,6 @@
     "body": {
       "suggest": "book"
     },
-    "ttfb": 105
+    "ttfb": 108
   }
 }

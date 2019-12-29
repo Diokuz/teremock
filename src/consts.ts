@@ -1,16 +1,25 @@
 import isCi from 'is-ci'
 import { Options, Interceptor } from './types'
 
-export const DEFAULT_INTERCEPTOR = {
-  // @todo headers: { only application/json by default }
+export const DEFAULT_INTERCEPTOR_CAPTURE = {
   url: '*',
-  methods: new Set('get,post,put,patch,delete,option,head'.split(',')),
+  methods: new Set('*'),
   pass: false,
   hash: {},
+  resourceTypes: new Set(['xhr', 'fetch']),
+}
+
+export const DEFAULT_INTERCEPTOR_PASS = {
+  url: '*',
+  methods: new Set('*'),
+  pass: true,
+  hash: {},
+  resourceTypes: new Set('*'),
 }
 
 const defaultInterceptors: Record<string, Interceptor> = {
-  '*': DEFAULT_INTERCEPTOR,
+  capture: DEFAULT_INTERCEPTOR_CAPTURE,
+  pass: DEFAULT_INTERCEPTOR_PASS,
 }
 
 export const DEFAULT_OPTIONS: Options = {

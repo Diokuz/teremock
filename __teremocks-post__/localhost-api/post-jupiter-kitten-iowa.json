@@ -11,7 +11,8 @@
     },
     "body": {
       "q": "a"
-    }
+    },
+    "resourceType": "fetch"
   },
   "response": {
     "url": "http://localhost:3000/api",
@@ -24,6 +25,6 @@
     "body": {
       "suggest": "example"
     },
-    "ttfb": 132
+    "ttfb": 131
   }
 }

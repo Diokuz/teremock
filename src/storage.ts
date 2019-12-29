@@ -51,7 +51,7 @@ export default class FileStorage implements Storage {
       loggerSet(`file already exists, overwriting ${mockId}`)
     }
 
-    signale.set(`writing mock for url "${json?.request?.url}"`)
+    signale.set(`writing mock for mockId "${mockId}", url "${json?.request?.url}"`)
     signale.set(`to file "${absFileName}"`)
 
     try {

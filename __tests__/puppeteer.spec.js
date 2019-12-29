@@ -48,11 +48,10 @@ describe('teremock', () => {
     const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-q-abcd.json')
 
     rimraf.sync(path.resolve(__dirname, '../__teremocks__'))
-    await mocker.stop()
-    await page.goto('http://localhost:3000')
 
-    // * Starting mocker
+    // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
     await mocker.start({ page })
+    await page.goto('http://localhost:3000')
 
     expect(fs.existsSync(mockFilePath)).toBe(false)
 
@@ -236,17 +235,13 @@ describe('teremock', () => {
   })
 
   describe('options.interceptors', () => {
-    beforeAll(async () => {
-      await mocker.stop()
-    })
-
     it('capture GET request for /api', async () => {
       await page.goto('http://localhost:3000')
 
       // Custom storage for spying (fs wont be used)
       const storage = { set: sinon.spy(async () => ''), has: () => false }
       const interceptors = {
-        some_name: { url: 'http://localhost:3000/api' }
+        some_name: { url: '/api' }
       }
 
       // * Starting mocker with wildcard interceptor
@@ -261,35 +256,37 @@ describe('teremock', () => {
       // console.log('storage.set.getCall(0).args[0]', storage.set.getCall(0).args[0])
       expect(storage.set.calledOnce).toBe(true)
       expect(storage.set.getCall(0).args[0]).toBe('some_name--get-q-click')
+      await mocker.stop()
     })
 
     it('dont capture GET request for /api when methods are ["post"]', async () => {
-      await mocker.stop()
       await page.goto('http://localhost:3000')
 
       // Custom storage for spying (fs wont be used)
       const storage = { has: sinon.spy(async () => '') }
-      const capture = {
-        urls: ['http://localhost:3000/api'],
-        methods: ['post']
+      // Custom interceptor
+      const interceptors = {
+        post: {
+          url: '/api',
+          methods: 'post'
+        }
       }
 
-      // * Starting mocker with void `pass`
-      await mocker.start({ page, storage, capture })
+      // * Starting mocker with only `post` interceptor
+      await mocker.start({ page, storage, interceptors })
 
-      // * Typing `a` → invoking cors request to `/api`
-      await page.click('#input')
-      await page.keyboard.type('a')
+      // * Invoking request to `/api`
+      await page.click('#button')
       await sleep(200)
 
       // * storage.has must not be called, since the request is not capturable
       expect(storage.has.called).toBe(false)
+      await mocker.stop()
     })
   })
 
   describe('mocker.spy', () => {
     it('mocker.spy simple case', async () => {
-      await mocker.stop()
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
@@ -314,12 +311,12 @@ describe('teremock', () => {
       const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
 
       expect(text).toBe('200 world')
+      await mocker.stop()
     })
   })
 
   describe('mocker.add', () => {
     it('mocker.add simple case', async () => {
-      await mocker.stop()
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
@@ -337,10 +334,10 @@ describe('teremock', () => {
 
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
       expect(text).toBe('200 mocker.add suggest')
+      await mocker.stop()
     })
 
     it('remove handler', async () => {
-      await mocker.stop()
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
@@ -359,10 +356,10 @@ describe('teremock', () => {
 
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
       expect(text).not.toBe('200 mocker.add suggest')
+      await mocker.stop()
     })
 
     it('ttfb', async () => {
-      await mocker.stop()
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
@@ -381,10 +378,10 @@ describe('teremock', () => {
       await sleep(1)
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
       expect(text).toBe('200 mocker.add suggest')
+      await mocker.stop()
     })
 
     it('race condition', async () => {
-      await mocker.stop()
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
@@ -421,6 +418,7 @@ describe('teremock', () => {
       await sleep(150)
       const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
       expect(text2).toBe('200 custom A')
+      await mocker.stop()
     })
   })
 })

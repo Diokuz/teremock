@@ -31,6 +31,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     method: puppeteerRequest.method(),
     headers: puppeteerRequest.headers(),
     body: requestBody,
+    resourceType: puppeteerRequest.resourceType(),
   }
 
   const response: Response = {

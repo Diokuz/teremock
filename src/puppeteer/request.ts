@@ -9,6 +9,7 @@ export async function extractPuppeteerRequest(puppeteerRequest): Promise<DrivetR
     method: puppeteerRequest.method(),
     headers: puppeteerRequest.headers(),
     body: puppeteerRequest.postData(),
+    resourceType: puppeteerRequest.resourceType(),
   }
 
   puppeteerRequest.timestamp = Date.now()

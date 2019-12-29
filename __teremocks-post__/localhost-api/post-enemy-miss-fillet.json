@@ -11,7 +11,8 @@
     },
     "body": {
       "q": "ab"
-    }
+    },
+    "resourceType": "fetch"
   },
   "response": {
     "url": "http://localhost:3000/api",

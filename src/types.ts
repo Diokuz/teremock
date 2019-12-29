@@ -34,6 +34,7 @@ export type Interceptor = {
   name?: string // from keys of UserInterceptor. If no name, hostname+path is used
   url: string
   methods: Set<string>
+  resourceTypes: Set<string>
   query?: Record<string, any>
   body?: Record<string, any>
   pass: boolean
@@ -44,7 +45,8 @@ export type Interceptor = {
 export type UserInterceptor = {
   name?: string
   url?: string
-  methods?: string
+  methods?: Set<string> | string
+  resourceTypes?: Set<string> | string
   query?: Record<string, any>
   body?: Record<string, any>
   pass?: boolean
@@ -71,6 +73,7 @@ export type Request = {
   method: string
   headers: Record<string, string>
   body?: string | Record<string, any>
+  resourceType: string
 }
 
 export type Response = {
