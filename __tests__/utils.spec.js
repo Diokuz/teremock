@@ -1,5 +1,5 @@
 const { findInterceptor, hasMatch, getQuery, isFilterMatched, blacklist, userOptionsToOptions } = require('../dist/utils')
-const { DEFAULT_OPTIONS } = require('../dist/consts')
+const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../dist/consts')
 
 describe('findInterceptor', () => {
   it('*', () => {
@@ -7,19 +7,19 @@ describe('findInterceptor', () => {
     const request = { url: 'http://example.com', method: 'get' }
     const found = findInterceptor({ interceptors, request })
 
-    expect(found).toBe(interceptors.capture)
+    expect(found).toBe(DEFAULT_INTERCEPTOR_CAPTURE)
   })
 
   it('* resourceTypes: only xhr and fetch', () => {
     const interceptors = DEFAULT_OPTIONS.interceptors
     let request = { url: 'http://example.com', method: 'get', resourceType: 'xhr' }
-    // expect(findInterceptor({ interceptors, request })).toBe(interceptors.capture)
+    expect(findInterceptor({ interceptors, request })).toBe(DEFAULT_INTERCEPTOR_CAPTURE)
 
-    // request = { url: 'http://example.com', method: 'get', resourceType: 'fetch' }
-    // expect(findInterceptor({ interceptors, request })).toBe(interceptors.capture)
+    request = { url: 'http://example.com', method: 'get', resourceType: 'fetch' }
+    expect(findInterceptor({ interceptors, request })).toBe(DEFAULT_INTERCEPTOR_CAPTURE)
 
     request = { url: 'http://example.com', method: 'get', resourceType: 'other' }
-    expect(findInterceptor({ interceptors, request })).toBe(interceptors.pass)
+    expect(findInterceptor({ interceptors, request })).toBe(DEFAULT_INTERCEPTOR_PASS)
   })
 
   it('* with query', () => {
@@ -27,7 +27,7 @@ describe('findInterceptor', () => {
     const request = { url: 'http://example.com', method: 'get', query: { foo: 'bar' } }
     const found = findInterceptor({ interceptors, request })
 
-    expect(found).toBe(interceptors.capture)
+    expect(found).toBe(DEFAULT_INTERCEPTOR_CAPTURE)
   })
 
   it('two matched interceptors → first should be taken', () => {
@@ -226,8 +226,9 @@ describe('userOptionsToOptions', () => {
     expect(options).toEqual({
       ...DEFAULT_OPTIONS,
       interceptors: {
+        ...DEFAULT_OPTIONS.interceptors,
         api: {
-          ...DEFAULT_OPTIONS.interceptors.capture,
+          ...DEFAULT_INTERCEPTOR_CAPTURE,
           ...apiMock,
           name: 'api',
           methods: new Set(apiMock.methods.split(',')),

@@ -15,10 +15,11 @@ async function sleep(time) {
   })
 }
 
+let server
+
 describe('teremock', () => {
   let page
   let browser
-  let server
 
   beforeAll(async () => {
     const serverPath = path.resolve(__dirname, 'server')
@@ -147,18 +148,12 @@ describe('teremock', () => {
   })
 
   it('Resolves `stop` even when no requests from capture.urls were made', async () => {
-    await mocker.stop()
     await page.goto('http://localhost:3000')
 
     // * Starting mocker with void capture.urls
-    await mocker.start({
-      page,
-      capture: {
-        urls: [],
-      },
-    })
+    await mocker.start({ page })
 
-    // * Typing `a` → invoking request to `/api`, which is not mocked
+    // * invoking request to `/api`, which is not mocked
     await page.click('#input')
     await page.keyboard.type('a')
 
@@ -168,6 +163,37 @@ describe('teremock', () => {
     }, { timeout: 4000 })
 
     await expect(mocker.stop()).resolves.toEqual(undefined)
+  })
+
+  it('do not change the filename when blacklisted query changes', async () => {
+    const interceptor = {
+      naming: { query: { blacklist: ['baz'] } }
+    }
+    const storage = { set: sinon.spy(async () => ''), has: () => false }
+
+    // * Creating mocker with custom storage
+    const mocker = new Mocker({ storage })
+
+    // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
+    await mocker.start({
+      page,
+      interceptors: { basic: interceptor }
+    })
+    await page.goto('http://localhost:3000')
+
+    // * Making request with query param baz=1
+    await page.evaluate(function() { fetch('/api?foo=bar&baz=1') } )
+    await mocker.connections()
+    const firstMockId = storage.set.getCall(0).args[0]
+    expect(firstMockId.length > 0).toBe(true)
+
+    // * Making request with query param baz=2
+    await page.evaluate(function() { fetch('/api?foo=bar&baz=2') } )
+    await mocker.connections()
+    const secondMockId = storage.set.getCall(1).args[0]
+
+    expect(firstMockId).toBe(secondMockId)
+    await mocker.stop()
   })
 
   describe.skip('mocker.set()', () => {
@@ -421,4 +447,8 @@ describe('teremock', () => {
       await mocker.stop()
     })
   })
+})
+
+process.on('exit', () => {
+  process.kill(-server.pid)
 })

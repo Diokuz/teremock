@@ -38,7 +38,7 @@ export type Interceptor = {
   query?: Record<string, any>
   body?: Record<string, any>
   pass: boolean
-  hash?: Naming
+  naming?: Naming
   response?: Response
 }
 

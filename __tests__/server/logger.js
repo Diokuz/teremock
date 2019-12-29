@@ -8,6 +8,12 @@ const options = {
   secrets: [],
   stream: process.stdout,
   types: {
+    info: {
+      badge: '»',
+      color: 'green',
+      label: 'info',
+      logLevel: 'debug',
+    },
     req: {
       badge: '»',
       color: 'yellow',

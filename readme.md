@@ -1,8 +1,6 @@
-> WIP: this package is under construction! Use `puppeteer-request-mocker` for now.
-
 # teremock
 
-## Do I need that thing?
+## Do I need teremock?
 
 If you are writing puppeteer tests, and you want to mock your network responses easily – probably yes.
 
@@ -20,9 +18,9 @@ await mocker.start({ page })
 
 First, `teremock` intercepts puppeteers page requests and tries to find corresponding responses in files. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response. If not – request will go to the real backend.
 
-Second, `teremock` intercepts all responds, and writes them to the **filesystem**.
+Second, `teremock` intercepts all responds, and writes them to the **filesystem**,
 
-### or not
+### or not.
 
 Sometimes it is more convenient to set mocks right in tests, without storing them to the file system. For that cases mocker.add method exist.
 
@@ -151,6 +149,10 @@ If present, it is used instead of file-based mocks. Usefull for testing differen
 
 Default value: `null`.
 
+#### interceptor.`naming` [Object]
+
+See [Change naming rules](#change naming rules) below.
+
 ### Examples
 
 ```ts
@@ -188,7 +190,7 @@ e.g. `post`
 
 #### 4. query or three words
 
-If request method is `get`, and query is short enough, it is used. Otherwice, three words are used. These words are pseudorandom, and depends on a) request url (without query) b) query params (sorted, deduped) c) body params (sorted).
+If request method is `get`, and query is short enough, it is used. Otherwise, three words are used. These words are pseudorandom, and depends on a) request url (without query) b) query params (sorted, deduped) c) body params (sorted).
 
 #### 5. `.json` extension.
 
@@ -210,12 +212,14 @@ const dynamicBodyParams = [
 ]
 
 const interceptor = {
+  naming: {
     query: {
       blacklist: dynamicQueryParams
     },
     body: {
       blacklist: dynamicBodyParams
     }
+  }
 })
 ```
 Now, when you have a POST request with url and body:
@@ -247,8 +251,12 @@ It is not possible to use different lists for different urls simultaneously, but
 
 ## API methods
 
-## mocker.start()
+### mocker.start()
 
 Starts the mocker. Mocks for all requests matched `options.capture` will be used, but no mocks used before `mocker.start()` and after `mocker.stop()`
 
 Both `mocker.start()` and `mocker.stop()` return a `Promise`.
+
+### mocker.stop()
+
+### mocker.add()

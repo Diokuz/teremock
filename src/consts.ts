@@ -5,7 +5,7 @@ export const DEFAULT_INTERCEPTOR_CAPTURE = {
   url: '*',
   methods: new Set('*'),
   pass: false,
-  hash: {},
+  naming: {},
   resourceTypes: new Set(['xhr', 'fetch']),
 }
 
@@ -13,13 +13,14 @@ export const DEFAULT_INTERCEPTOR_PASS = {
   url: '*',
   methods: new Set('*'),
   pass: true,
-  hash: {},
+  naming: {},
   resourceTypes: new Set('*'),
 }
 
 const defaultInterceptors: Record<string, Interceptor> = {
-  capture: DEFAULT_INTERCEPTOR_CAPTURE,
-  pass: DEFAULT_INTERCEPTOR_PASS,
+  // You could overwrite default interceptors, but do you really need that? Tell me in issue!
+  __teremock_buildin_capture: DEFAULT_INTERCEPTOR_CAPTURE,
+  __teremock_buildin_pass: DEFAULT_INTERCEPTOR_PASS,
 }
 
 export const DEFAULT_OPTIONS: Options = {

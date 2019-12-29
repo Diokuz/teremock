@@ -53,13 +53,17 @@ export default function createHandler(initialParams) {
     const interceptor = findInterceptor({ interceptors, request })
 
     if (!interceptor) {
+      signale.warn(`interceptor not found, request to "${request.url}" will be aborted`)
+      signale.warn(`it is recommended to add interceptors to cover all request from your test app`)
+      signale.warn(`see https://github.com/diokuz/teremock#interceptor for details`)
+
       logger('» interceptor not found, aborting')
       abort('aborted')
       return
     }
 
     const bodyStr = getBodyStr(request.body)
-    const mockId = getMockId({ ...request, naming: interceptor.hash, name: interceptor.name, body: bodyStr })
+    const mockId = getMockId({ ...request, naming: interceptor.naming, name: interceptor.name, body: bodyStr })
     const mog = debug(`teremock:${mockId}`)
 
     mog(`interceptor found`, interceptor)

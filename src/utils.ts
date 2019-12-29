@@ -182,11 +182,14 @@ export function userOptionsToOptions(defaultOptions: Options, userOptions: UserO
   if (typeof restUO.interceptors !== 'undefined') {
     const userInterceptors: Record<string, UserInterceptor> = restUO.interceptors
 
-    interceptors = Object.keys(userInterceptors).reduce<Record<string, Interceptor>>((acc, key) => {
+    const customInterceptors = Object.keys(userInterceptors).reduce<Record<string, Interceptor>>((acc, key) => {
       acc[key] = userInterceptorToInterceptor(userInterceptors[key], key)
 
       return acc
     }, {})
+
+    // Default interceptors must be in the end, but it should be possible to overwrite them
+    interceptors = { ...customInterceptors, ...defaultInterceptors, ...customInterceptors }
   }
 
   return {
