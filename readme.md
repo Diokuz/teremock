@@ -2,21 +2,37 @@
 
 ## Do I need teremock?
 
-If you write puppeteer tests, and you want to mock your network responses easily – probably yes.
+If you write puppeteer / mocha / karma tests, and you want to mock your network responses easily – probably yes.
 
-## How to use
+## How to use with puppeteer
 
 ```js
-import mocker from 'teremock'
+import teremock from 'teremock'
 
-await mocker.start({ page })
+await teremock.start({ page })
 
 // async stuff which is making requests, including redirects
 ```
 
+## How to use with mocha / karma
+
+```js
+// server-side
+import teremock from 'teremock/express'
+
+await teremock.start({
+  app: expressApp,
+  env: { myApi: 'http://example.com/api' },
+})
+
+// client-side
+// just make sure, you configured your test app to make request
+// `<test-app-host>/myApi` instead of `http://example.com/api`
+```
+
 ## How it works
 
-First, `teremock` intercepts puppeteers page requests and tries to find corresponding responses in files. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response. If not – request will go to the real backend.
+First, `teremock` intercepts all confi requegured requests and tries to find corresponding responses in mock files. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response. If not – request will go to the real backend.
 
 Second, `teremock` intercepts all responds, and writes them to the **filesystem**,
 
@@ -32,18 +48,23 @@ After that line, all request, matched `interceptor`, will be mocked with `interc
 
 > Note: dynamically added interceptors have priority over statically added interceptors. Also, latter `mocker.add` interceptors have higher priority. _See [interceptor](#interceptor) below_.
 
-
 ## options
 
 ```js
 mocker.start(options)
 ```
-All options are optional (that's why they called so), except `page`.
+All options are optional (that's why they called so), except `page` for puppeteer, and `app / env` for express.
 
 ```js
 const options = {
-  // puppeteer page
+  // Puppeteer options
   page: page,
+
+  // Express options
+  app: express(),
+  env: { myApi: 'http://example.com/api' },
+
+  // Common options
 
   // Named list of request interceptors
   interceptors: {
