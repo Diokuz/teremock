@@ -1,4 +1,4 @@
-const getMockId = require('../dist/mock-id').default
+const getMockId = require('../src/mock-id').default
 
 const naming = {}
 

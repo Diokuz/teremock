@@ -44,20 +44,6 @@
       <div class='suggest' id="suggest">&nbsp;</div>
     </div>
 
-    <script>
-      const suggest = document.querySelector('#suggest')
-
-      document.querySelector('#input').addEventListener('keyup', (e) => {
-        const query = e.target.value
-
-        fetch(`/api?q=${query}`)
-          .then(async (re) => {
-            const j = await re.json()
-            const { status } = re
-
-            suggest.innerText = `${status} ${j.suggest}`
-          })
-      })
-    </script>
+    <script src='./bundle.js'></script>
   </body>
 </html>

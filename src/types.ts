@@ -28,7 +28,7 @@ export interface Storage {
   get: (key: string) => Promise<{ request: Request, response: Response }>
   set: (key: string, data: { request: Request, response: Response }) => Promise<void>
   has: (key: string) => Promise<boolean>
-  setWd: (wd: string) => void
+  setWd: (wd: string | string[]) => void
 }
 
 export type Naming = {
@@ -82,12 +82,12 @@ export type Options = {
   response?: Response
   skipResponseHeaders: string[]
   awaitConnectionsOnStop: boolean
-  wd?: string
+  wd?: string | string[]
 }
 
 export type UserOptions = {
   page?: any
-  wd?: string
+  wd?: string | string[]
   interceptors?: Record<string, UserInterceptor>
   skipResponseHeaders?: string[]
 }

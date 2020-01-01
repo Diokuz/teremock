@@ -1,7 +1,8 @@
 const fs = require('fs')
 const path = require('path')
 const express = require('express')
-const teremock = require('../../dist/express').default
+// const teremock = require('../../dist/express').default
+const tes = require('../../dist/express/server').default
 
 const app = express()
 
@@ -15,8 +16,7 @@ app.listen(3000, () => console.log('http://localhost:3000'))
 app.listen(4000, () => console.log('http://localhost:4000'))
 
 // will create `app.get('/api')` route, which will proxy requests to real-api
-teremock.start({
+tes.listen({
   app,
   env: { api: 'http://localhost:4000/real-api' },
-  wd: path.resolve(__dirname, '__teremocks__'),
 })

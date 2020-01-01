@@ -152,7 +152,7 @@ class Teremock {
   }
 
   public add(userInterceptor: UserInterceptor, overwrite = false) {
-    const name = userInterceptor.name || humanize(Math.random() + '', 1)
+    const name = userInterceptor.name || `teremock-add-${humanize(JSON.stringify(userInterceptor), 1)}-`
     const interceptor = userInterceptorToInterceptor(userInterceptor, name)
 
     if (name in this._interceptors && !overwrite) {

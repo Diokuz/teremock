@@ -1,6 +1,6 @@
 import Teremock from './teremock'
 
-const mocker = new Teremock()
+const teremock = new Teremock()
 
 export { Teremock }
-export default mocker
+export default teremock

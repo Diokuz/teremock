@@ -108,9 +108,23 @@ export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg: str
   const methods = typeof uint.methods === 'string' ? new Set(uint.methods.toLowerCase().split(',')) : defaultMethods
   const resourceTypes = typeof uint.resourceTypes === 'string' ? new Set(uint.resourceTypes.toLowerCase().split(',')) : defaultResourceTypes
 
+  let resp = {}
+
+  if ('response' in uint) {
+    resp = {
+      response: {
+        url: '<unknown>',
+        status: 200,
+        ttfb: 0,
+        ...uint.response,
+      }
+    }
+  }
+
   return {
     ...DEFAULT_INTERCEPTOR_CAPTURE,
     ...uint,
+    ...resp,
     methods,
     resourceTypes,
     name: validName,

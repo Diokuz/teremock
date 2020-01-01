@@ -1,8 +1,8 @@
 const fs = require('fs')
 const path = require('path')
-const getFileName = require('../dist/storage').getFileName
-const Storage = require('../dist/storage').default
-const getMockId = require('../dist/mock-id').default
+const getFileName = require('../src/storage').getFileName
+const Storage = require('../src/storage').default
+const getMockId = require('../src/mock-id').default
 const rimraf = require('rimraf')
 
 const PROJECT_ROOT = process.cwd()

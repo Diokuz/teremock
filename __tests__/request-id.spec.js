@@ -1,4 +1,4 @@
-const getRequestId = require('../dist/request-id').default
+const getRequestId = require('../src/request-id').default
 
 const defaultNaming = {}
 

@@ -1,11 +1,8 @@
 {
   "name": "teremock",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Easy to use test request mocker for puppeteer / mocha / karma",
   "main": "dist",
-  "installConfig": {
-    "pnp": true
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Diokuz/teremock.git"
@@ -39,6 +36,7 @@
     "@types/node": "^13.1.2",
     "@types/puppeteer": "^2.0.0",
     "@types/signale": "^1.2.1",
+    "@types/ws": "^6.0.4",
     "@yarnpkg/pnpify": "^2.0.0-rc.12",
     "body-parser": "^1.19.0",
     "express": "^4.17.1",
@@ -51,6 +49,8 @@
     "ts-jest": "^24.2.0",
     "typescript": "^3.7.3",
     "wait-port": "^0.2.6",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
     "ws": "^7.2.1"
   }
 }

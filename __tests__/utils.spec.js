@@ -1,5 +1,5 @@
-const { findInterceptor, getQuery, isInterceptorMatched, blacklist, userOptionsToOptions } = require('../dist/utils')
-const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../dist/consts')
+const { findInterceptor, getQuery, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor } = require('../src/utils')
+const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../src/consts')
 
 describe('findInterceptor', () => {
   it('*', () => {
@@ -212,5 +212,16 @@ describe('userOptionsToOptions', () => {
         },
       },
     })
+  })
+})
+
+describe('utils.userInterceptorToInterceptor', () => {
+  it('enrich custom response', () => {
+    const userInterceptor = { response: {} }
+    const interceptor = userInterceptorToInterceptor(userInterceptor, 'a')
+
+    expect(interceptor.response.status).toBe(200)
+    expect(typeof interceptor.response.ttfb).toBe('number')
+    expect(typeof interceptor.response.url).toBe('string')
   })
 })

@@ -105,7 +105,9 @@ export default class FileStorage implements Storage {
     return fileExists
   }
 
-  setWd(nextWd: string): void {
-    this.wd = nextWd
+  setWd(nextWd: string | string[]): string {
+    this.wd = typeof nextWd === 'string' ? nextWd : path.join(process.cwd(), ...nextWd)
+
+    return this.wd
   }
 }

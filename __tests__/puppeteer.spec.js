@@ -6,8 +6,8 @@ const waitPort = require('wait-port')
 const rimraf = require('rimraf')
 const signale = require('signale')
 const sinon = require('sinon')
-const teremock = require('../dist').default
-const Teremock = require('../dist').Teremock
+const teremock = require('../src').default
+const Teremock = require('../src').Teremock
 
 async function sleep(time) {
   return new Promise((resolve, reject) => {
