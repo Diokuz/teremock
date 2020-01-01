@@ -27,8 +27,8 @@ const options = {
       logLevel: 'info',
     },
     info: {
-      badge: '»',
-      color: 'blue',
+      badge: 'ø',
+      color: 'green',
       label: 'info',
       logLevel: 'debug',
     },

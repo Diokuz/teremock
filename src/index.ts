@@ -1,5 +1,6 @@
-import Mocker from './mocker'
+import Teremock from './teremock'
 
-const mocker = new Mocker()
+const mocker = new Teremock()
 
+export { Teremock }
 export default mocker

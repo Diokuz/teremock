@@ -33,15 +33,31 @@
       }
     </style>
 
-    <title>Teremock // Form submit example</title>
+<title>Teremock // Express driver example</title>
   </head>
 
   <body>
-    <form class='wrap' method='post' action='/form-submit'>
-      <input name='firstname' type='text' autofocus placeholder="firstname" />
-      <input name='lastname' type='text' placeholder="lastname" />
+    <div class='wrap'>
+      <div class='suggest'>Type 'abc' → get mocked custom response</div>
+      <div class='suggest'>Type any other → get real responses and new mock files</div>
+      <input type='text' id='input' autofocus placeholder="GET" />
+      <div class='suggest' id="suggest">&nbsp;</div>
+    </div>
 
-      <input id='submit' type='submit' text='submit' />
-    </form>
+    <script>
+      const suggest = document.querySelector('#suggest')
+
+      document.querySelector('#input').addEventListener('keyup', (e) => {
+        const query = e.target.value
+
+        fetch(`/api?q=${query}`)
+          .then(async (re) => {
+            const j = await re.json()
+            const { status } = re
+
+            suggest.innerText = `${status} ${j.suggest}`
+          })
+      })
+    </script>
   </body>
 </html>

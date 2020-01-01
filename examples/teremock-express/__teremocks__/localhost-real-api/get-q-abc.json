@@ -1,0 +1,32 @@
+{
+  "request": {
+    "url": "http://localhost:4000/real-api?q=abc",
+    "method": "GET",
+    "headers": {
+      "host": "localhost:3000",
+      "connection": "keep-alive",
+      "pragma": "no-cache",
+      "cache-control": "no-cache",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+      "accept": "*/*",
+      "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "cors",
+      "referer": "http://localhost:3000/",
+      "accept-encoding": "gzip, deflate, br",
+      "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7,nb;q=0.6"
+    },
+    "body": {},
+    "resourceType": "xhr"
+  },
+  "response": {
+    "url": "http://localhost:4000/real-api?q=abc",
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "connection": "keep-alive"
+    },
+    "status": 200,
+    "body": {
+      "suggest": "Any other, except 'c' :))"
+    }
+  }
+}

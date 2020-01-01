@@ -1,7 +1,7 @@
 {
   "request": {
-    "method": "POST",
     "url": "http://localhost:3000/form-submit",
+    "method": "POST",
     "headers": {
       "origin": "http://localhost:3000",
       "upgrade-insecure-requests": "1",
@@ -10,14 +10,18 @@
       "sec-fetch-user": "?1",
       "referer": "http://localhost:3000/"
     },
-    "body": "firstname=Firstname&lastname=Lastname"
+    "body": "firstname=Firstname&lastname=Lastname",
+    "resourceType": "document"
   },
   "response": {
-    "status": 200,
+    "url": "http://localhost:3000/form-submit",
+    "status": 301,
     "headers": {
+      "location": "/after-submit-page?firstname=Firstname",
+      "vary": "Accept",
       "content-type": "text/html; charset=utf-8",
       "connection": "keep-alive"
     },
-    "body": "Submitted with form-data: {\n  \"firstname\": \"Firstname\",\n  \"lastname\": \"Lastname\"\n}"
+    "ttfb": 34
   }
 }

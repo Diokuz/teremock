@@ -1,11 +1,9 @@
-const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
 const puppeteer = require('puppeteer')
 const waitPort = require('wait-port')
 const rimraf = require('rimraf')
 const signale = require('signale')
-const sinon = require('sinon')
 const mocker = require('../../').default
 
 async function sleep(time) {
@@ -26,6 +24,7 @@ async function before() {
   browser = await puppeteer.launch(process.env.D ? {
     headless: false,
     slowMo: 80,
+    devtools: true,
   } : {})
 
   page = await browser.newPage()
@@ -45,15 +44,12 @@ async function after() {
 
 async function run() {
   await before()
-  await page.goto('http://localhost:3000')
 
+  await page.goto('http://localhost:3000')
   await mocker.start({ page, wd: mocksDir })
-  await page.click('input[name="firstname"]')
-  await page.keyboard.type('Firstname', { delay: 100 })
-  await page.click('input[name="lastname"]')
-  await page.keyboard.type('Lastname', { delay: 100 })
-  await page.click('#submit')
-  await mocker.connections()
+
+  await sleep(99999)
+  await page.click('button')
 
   await mocker.stop()
   await after()

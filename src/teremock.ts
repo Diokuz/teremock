@@ -16,11 +16,9 @@ import { humanize } from './words-hash'
 
 const logger = debug('teremock')
 
-
-
 function noop() {}
 
-class Mocker {
+class Teremock {
   private defaultOptions: Options
   private extraParams: UserOptions
   private options: Options
@@ -31,7 +29,7 @@ class Mocker {
   private removeCloseHandler: Function | null
   private removeRequestHandler: Function | null
   private removeResponseHandler: Function | null
-  private driver: Driver
+  protected driver: Driver
   private _startPromise: Promise<any> | void
   private _resolveReqs: Function
   private _rejectReqs: Function
@@ -47,6 +45,7 @@ class Mocker {
     this._resolveReqs = noop
     this._rejectReqs = noop
     this.storage = opts?.storage ?? new FileStorage()
+    this.driver = opts?.driver
   }
 
   private _onAnyReqStart(req) {
@@ -87,7 +86,8 @@ class Mocker {
     this.alive = true
     this.options = userOptionsToOptions(this.defaultOptions, userOptions)
     this.options.wd && this.storage.setWd(this.options.wd)
-    this.driver = new PuppeteerDriver({ page: userOptions.page })
+    this.driver = this.driver ?? new PuppeteerDriver({ page: userOptions.page })
+    await this.driver.setRequestInterception(true)
     this._spies = []
     this._interceptors = this.options.interceptors
 
@@ -117,7 +117,6 @@ class Mocker {
       reqSet: this.reqSet,
       _onReqStarted: (req) => this._onAnyReqStart(req),
       _onReqsReject: (...args) => this._rejectReqs(...args),
-      pageUrl: () => this.driver.getPageUrl(),
     })
 
     const pureResponseHandler = createResponseHandler({
@@ -175,15 +174,19 @@ class Mocker {
    * Resolves when all mocked connections are completed
    * @deprecated
    */
-  public connections() {
-    signale.warn('mocker.connections() is deprecated and will be removed')
-    signale.warn('try to await explicit UI changes, not connections')
+  public connections(opts = { timeout: 1000 }) {
+    const { timeout } = opts
 
     if (typeof this._startPromise === 'undefined') {
       throw new Error('Cant await connections. Probably you didnt start the mocker?')
     }
 
-    return this.reqsPromise || Promise.resolve()
+    const timeoutPromise = new Promise((_resolve, reject) => {
+      setTimeout(() => reject(new Error(`failed to await connectins in ${timeout} ms`)), timeout)
+    })
+    const connectionsPromise = this.reqsPromise || Promise.resolve()
+
+    return Promise.race([timeoutPromise, connectionsPromise])
   }
 
   public spy(spyFilter: any) {
@@ -252,9 +255,9 @@ class Mocker {
 
     clearTimeout(t1)
 
-    this.removeCloseHandler?.()
-    this.removeRequestHandler?.()
-    this.removeResponseHandler?.()
+    await this.removeCloseHandler?.()
+    await this.removeRequestHandler?.()
+    await this.removeResponseHandler?.()
     this.alive = false
 
     // @todo how to solve that without closure?
@@ -271,4 +274,4 @@ class Mocker {
   }
 }
 
-export default Mocker
+export default Teremock

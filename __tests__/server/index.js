@@ -16,8 +16,6 @@ const suggests = {
 }
 
 app.get('/api', (req, res) => {
-  logger.info(`get /api`, req.query)
-
   const q = req.query.q
 
   setTimeout(() => {
@@ -27,8 +25,6 @@ app.get('/api', (req, res) => {
 })
 
 app.post('/api', (req, res) => {
-  logger.req(`post /api`, req.body)
-
   const q = req.body.q
 
   setTimeout(() => {
@@ -38,8 +34,6 @@ app.post('/api', (req, res) => {
 })
 
 app.post('/cors-api', (req, res) => {
-  logger.req(`post /cors-api`, req.query)
-
   const q = req.query.q
 
   setTimeout(() => {
@@ -49,7 +43,6 @@ app.post('/cors-api', (req, res) => {
 })
 
 app.get('/', (req, res) => {
-  logger.req(`entering /`)
   try {
     const htmlPath = path.resolve(__dirname, './index.html')
     const htmlContent = fs.readFileSync(htmlPath, 'utf8')
@@ -62,8 +55,6 @@ app.get('/', (req, res) => {
 })
 
 app.get('/text', (req, res) => {
-  logger.info(`get /text`)
-
   res.send('<div id="text">text</div>')
 })
 

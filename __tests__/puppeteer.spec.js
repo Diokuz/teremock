@@ -6,8 +6,8 @@ const waitPort = require('wait-port')
 const rimraf = require('rimraf')
 const signale = require('signale')
 const sinon = require('sinon')
-const mocker = require('../dist').default
-const Mocker = require('../dist/mocker').default
+const teremock = require('../dist').default
+const Teremock = require('../dist').Teremock
 
 async function sleep(time) {
   return new Promise((resolve, reject) => {
@@ -26,6 +26,7 @@ describe('teremock', () => {
     browser = await puppeteer.launch(process.env.D ? {
       headless: false,
       slowMo: 80,
+      devtools: true,
     } : {})
 
     page = await browser.newPage()
@@ -45,171 +46,15 @@ describe('teremock', () => {
     process.kill(-server.pid)
   })
 
-  it('generates mocks', async () => {
-    const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-q-abcd.json')
+  describe('basic', () => {
+    it('generates mocks', async () => {
+      const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-q-abcd.json')
 
-    rimraf.sync(path.resolve(__dirname, '../__teremocks__'))
+      rimraf.sync(path.resolve(__dirname, '../__teremocks__'))
 
-    // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
-    await mocker.start({ page })
-    await page.goto('http://localhost:3000')
-
-    expect(fs.existsSync(mockFilePath)).toBe(false)
-
-    // * Typing `abcd` → invoking request to `/api`
-    await page.click('#input')
-    await page.keyboard.type('abcd', { delay: 100 })
-
-    // * wait for all connections to complete
-    await mocker.connections()
-    // @todo fix connections and write tests already!
-    await sleep(500)
-
-    // * At that point there must be mock files
-    expect(fs.existsSync(mockFilePath)).toBe(true)
-  })
-
-  it('generates mocks for POST request', async () => {
-    const mockFilePath = path.resolve(__dirname, '../__teremocks-post__/localhost-api/post-jupiter-kitten-iowa.json')
-
-    rimraf.sync(path.resolve(__dirname, '../__teremocks-post__'))
-    await mocker.stop()
-    await page.goto('http://localhost:3000')
-
-    // * Starting mocker
-    await mocker.start({
-      page,
-      wd: '__teremocks-post__',
-    })
-
-    expect(fs.existsSync(mockFilePath)).toBe(false)
-
-    // * Typing `abcd` → invoking POST request to `/api`
-    await page.click('#input-post')
-    await page.keyboard.type('abcd', { delay: 10 })
-
-    // * wait for all connections to complete
-    await mocker.connections()
-
-    // * At that point there must be mock files
-    expect(fs.existsSync(mockFilePath)).toBe(true)
-
-    // * stopping the mocker
-    await mocker.stop()
-  })
-
-  it('uses existing mocks', async () => {
-    await mocker.stop()
-    await page.goto('http://localhost:3000')
-
-    // * Starting mocker
-    await mocker.start({
-      page,
-      capture: {
-        urls: ['localhost:3000/api'],
-      },
-    })
-
-    // * Typing `a` → invoking request to `/api`, which are mocked
-    await page.click('#input')
-    await page.keyboard.type('a')
-
-    // * Checking suggest in the div
-    await sleep(100)
-    const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
-    expect(text).toBe('200 example')
-
-    await mocker.stop()
-  })
-
-  it('Resolves `connections` even when no requests from capture.urls were made', async () => {
-    await mocker.stop()
-    await page.goto('http://localhost:3000')
-
-    // * Starting mocker with void capture.urls
-    await mocker.start({
-      page,
-      capture: {
-        urls: [],
-      },
-    })
-
-    // * Typing `a` → invoking request to `/api`, which is not mocked
-    await page.click('#input')
-    await page.keyboard.type('a')
-
-    // * Awaiting for real response and its corresponding reaction (text `suggest: example` must appear)
-    await page.waitForFunction(() => {
-      return document.querySelector('#suggest').innerText === '200 example'
-    }, { timeout: 4000 })
-
-    // * All connections must resolves after theirs completion
-    await expect(mocker.connections()).resolves.toEqual(undefined)
-  })
-
-  it('Resolves `stop` even when no requests from capture.urls were made', async () => {
-    await page.goto('http://localhost:3000')
-
-    // * Starting mocker with void capture.urls
-    await mocker.start({ page })
-
-    // * invoking request to `/api`, which is not mocked
-    await page.click('#input')
-    await page.keyboard.type('a')
-
-    // * Awaiting for real response and its corresponding reaction (text `suggest: example` must appear)
-    await page.waitForFunction(() => {
-      return document.querySelector('#suggest').innerText === '200 example'
-    }, { timeout: 4000 })
-
-    await expect(mocker.stop()).resolves.toEqual(undefined)
-  })
-
-  it('do not change the filename when blacklisted query changes', async () => {
-    const interceptor = {
-      naming: { query: { blacklist: ['baz'] } }
-    }
-    const storage = { set: sinon.spy(async () => ''), has: () => false }
-
-    // * Creating mocker with custom storage
-    const mocker = new Mocker({ storage })
-
-    // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
-    await mocker.start({
-      page,
-      interceptors: { basic: interceptor }
-    })
-    await page.goto('http://localhost:3000')
-
-    // * Making request with query param baz=1
-    await page.evaluate(function() { fetch('/api?foo=bar&baz=1') } )
-    await mocker.connections()
-    const firstMockId = storage.set.getCall(0).args[0]
-    expect(firstMockId.length > 0).toBe(true)
-
-    // * Making request with query param baz=2
-    await page.evaluate(function() { fetch('/api?foo=bar&baz=2') } )
-    await mocker.connections()
-    const secondMockId = storage.set.getCall(1).args[0]
-
-    expect(firstMockId).toBe(secondMockId)
-    await mocker.stop()
-  })
-
-  describe.skip('mocker.set()', () => {
-    it('Generates mocks in the custom working directory', async () => {
-      const mockFilePath = path.resolve(__dirname, '../__extra-mocks__/localhost-api/get-app-diet-moon.json')
-      await mocker.stop()
+      // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
+      await teremock.start({ page })
       await page.goto('http://localhost:3000')
-
-      // * Starting mocker
-      await mocker.start({
-        page,
-        capture: {
-          urls: ['localhost:3000/api'],
-        },
-      })
-      await mocker.set('wd', path.resolve(process.cwd(), '__extra-mocks__'))
 
       expect(fs.existsSync(mockFilePath)).toBe(false)
 
@@ -217,8 +62,161 @@ describe('teremock', () => {
       await page.click('#input')
       await page.keyboard.type('abcd', { delay: 100 })
 
-      // * mocker.stop waits for all connections
-      await mocker.connections()
+      // * wait for all connections to complete
+      await teremock.connections()
+      // @todo fix connections and write tests already!
+      await sleep(500)
+
+      // * At that point there must be mock files
+      expect(fs.existsSync(mockFilePath)).toBe(true)
+    })
+
+    it('generates mocks for POST request', async () => {
+      const mockFilePath = path.resolve(__dirname, '../__teremocks-post__/localhost-api/post-jupiter-kitten-iowa.json')
+
+      rimraf.sync(path.resolve(__dirname, '../__teremocks-post__'))
+      await teremock.stop()
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({
+        page,
+        wd: '__teremocks-post__',
+      })
+
+      expect(fs.existsSync(mockFilePath)).toBe(false)
+
+      // * Typing `abcd` → invoking POST request to `/api`
+      await page.click('#input-post')
+      await page.keyboard.type('abcd', { delay: 10 })
+
+      // * wait for all connections to complete
+      await teremock.connections()
+
+      // * At that point there must be mock files
+      expect(fs.existsSync(mockFilePath)).toBe(true)
+
+      // * stopping the mocker
+      await teremock.stop()
+    })
+
+    it('uses existing mocks', async () => {
+      await teremock.stop()
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page })
+
+      // * Typing `a` → invoking request to `/api`, which are mocked
+      await page.click('#input')
+      await page.keyboard.type('a')
+
+      // * Checking suggest in the div
+      await sleep(100)
+      const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      expect(text).toBe('200 example')
+
+      await teremock.stop()
+    })
+
+    it.skip('Resolves `connections` even when no requests from capture.urls were made', async () => {
+      await teremock.stop()
+      await page.goto('http://localhost:3000')
+      const inter = { url: 'nflaiweuhfawejfaiosejfa;sdif' }
+
+      // * Starting mocker with void capture.urls
+      await teremock.start({
+        page,
+        interceptors: {
+          __teremock_buildin_capture: inter,
+          __teremock_buildin_pass: inter,
+        }
+      })
+
+      // * Typing `a` → invoking request to `/api`, which is not mocked
+      await page.click('#input')
+      await page.keyboard.type('a')
+
+      // * Awaiting for real response and its corresponding reaction (text `suggest: example` must appear)
+      await page.waitForFunction(() => {
+        // @ts-ignore
+        return document.querySelector('#suggest').innerText === '200 example'
+      }, { timeout: 4000 })
+
+      // * All connections must resolves after theirs completion
+      await expect(teremock.connections()).resolves.toEqual(undefined)
+    })
+
+    it('Resolves `stop` even when no requests from capture.urls were made', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker with void capture.urls
+      await teremock.start({ page })
+
+      // * invoking request to `/api`, which is not mocked
+      await page.click('#input')
+      await page.keyboard.type('a')
+
+      // * Awaiting for real response and its corresponding reaction (text `suggest: example` must appear)
+      await page.waitForFunction(() => {
+        // @ts-ignore
+        return document.querySelector('#suggest').innerText === '200 example'
+      }, { timeout: 4000 })
+
+      await expect(teremock.stop()).resolves.toEqual(undefined)
+    })
+
+    it('do not change the filename when blacklisted query changes', async () => {
+      const interceptor = {
+        naming: { query: { blacklist: ['baz'] } }
+      }
+      const storage = { set: sinon.spy(async () => ''), has: () => false }
+
+      // * Creating mocker with custom storage
+      const teremock = new Teremock({ storage })
+
+      // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
+      await teremock.start({
+        page,
+        interceptors: { basic: interceptor }
+      })
+      await page.goto('http://localhost:3000')
+
+      // * Making request with query param baz=1
+      await page.evaluate(function() { fetch('/api?foo=bar&baz=1') } )
+      await teremock.connections()
+      const firstMockId = storage.set.getCall(0).args[0]
+      expect(firstMockId.length > 0).toBe(true)
+
+      // * Making request with query param baz=2
+      await page.evaluate(function() { fetch('/api?foo=bar&baz=2') } )
+      await teremock.connections()
+      const secondMockId = storage.set.getCall(1).args[0]
+
+      expect(firstMockId).toBe(secondMockId)
+      await teremock.stop()
+    })
+  })
+
+  describe.skip('teremock.set()', () => {
+    it('Generates mocks in the custom working directory', async () => {
+      const mockFilePath = path.resolve(__dirname, '../__extra-mocks__/localhost-api/get-app-diet-moon.json')
+      await teremock.stop()
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page })
+      // @ts-ignore
+      await teremock.set('wd', path.resolve(process.cwd(), '__extra-mocks__'))
+
+      expect(fs.existsSync(mockFilePath)).toBe(false)
+
+      // * Typing `abcd` → invoking request to `/api`
+      await page.click('#input')
+      await page.keyboard.type('abcd', { delay: 100 })
+
+      // * teremock.stop waits for all connections
+      await teremock.connections()
       await sleep(1000)
 
       // * At that point there must be mock files
@@ -226,16 +224,11 @@ describe('teremock', () => {
     })
 
     it('Changes request.status', async () => {
-      await mocker.stop()
+      await teremock.stop()
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await mocker.start({
-        page,
-        capture: {
-          urls: ['localhost:3000/api'],
-        },
-      })
+      await teremock.start({ page })
 
       // * Typing `a` → invoking request to `/api`
       await page.click('#input')
@@ -243,14 +236,17 @@ describe('teremock', () => {
 
       // * Awaiting for suggest innerText with code 200
       await page.waitForFunction(() => {
+        // @ts-ignore
         return document.querySelector('#suggest').innerText === '200 example'
       }, { timeout: 700 })
 
-      await mocker.set('response', { status: 429 })
+      // @ts-ignore
+      await teremock.set('response', { status: 429 })
       await page.keyboard.type('b')
 
       // * Awaiting for suggest innerText with code 429
       await page.waitForFunction(() => {
+        // @ts-ignore
         return document.querySelector('#suggest').innerText === '429 world'
       }, { timeout: 700 })
     })
@@ -271,8 +267,8 @@ describe('teremock', () => {
       }
 
       // * Starting mocker with wildcard interceptor
-      const mocker = new Mocker({ storage })
-      await mocker.start({ page, interceptors })
+      const teremock = new Teremock({ storage })
+      await teremock.start({ page, interceptors })
 
       // * Invoking GET request to `/api`
       await page.click('#button')
@@ -282,7 +278,7 @@ describe('teremock', () => {
       // console.log('storage.set.getCall(0).args[0]', storage.set.getCall(0).args[0])
       expect(storage.set.calledOnce).toBe(true)
       expect(storage.set.getCall(0).args[0]).toBe('some_name--get-q-click')
-      await mocker.stop()
+      await teremock.stop()
     })
 
     it('dont capture GET request for /api when methods are ["post"]', async () => {
@@ -299,7 +295,8 @@ describe('teremock', () => {
       }
 
       // * Starting mocker with only `post` interceptor
-      await mocker.start({ page, storage, interceptors })
+      // @ts-ignore
+      await teremock.start({ page, storage, interceptors })
 
       // * Invoking request to `/api`
       await page.click('#button')
@@ -307,17 +304,17 @@ describe('teremock', () => {
 
       // * storage.has must not be called, since the request is not capturable
       expect(storage.has.called).toBe(false)
-      await mocker.stop()
+      await teremock.stop()
     })
   })
 
-  describe('mocker.spy', () => {
-    it('mocker.spy simple case', async () => {
+  describe('teremock.spy', () => {
+    it('teremock.spy simple case', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await mocker.start({ page })
-      const spy = mocker.spy({
+      await teremock.start({ page })
+      const spy = teremock.spy({
         url: 'http://localhost:3000/api',
         query: { q: 'ab' },
       })
@@ -337,21 +334,21 @@ describe('teremock', () => {
       const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
 
       expect(text).toBe('200 world')
-      await mocker.stop()
+      await teremock.stop()
     })
   })
 
-  describe('mocker.add', () => {
-    it('mocker.add simple case', async () => {
+  describe('teremock.add', () => {
+    it('teremock.add simple case', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await mocker.start({ page })
+      await teremock.start({ page })
 
       // * Create inline mock
-      mocker.add({
+      teremock.add({
         url: 'http://localhost:3000/api',
-        response: { body: { suggest: 'mocker.add suggest' } }
+        response: { body: { suggest: 'teremock.add suggest' } }
       })
 
       // * Invoking GET request to `/api`
@@ -359,20 +356,20 @@ describe('teremock', () => {
       await sleep(50)
 
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
-      expect(text).toBe('200 mocker.add suggest')
-      await mocker.stop()
+      expect(text).toBe('200 teremock.add suggest')
+      await teremock.stop()
     })
 
     it('remove handler', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await mocker.start({ page })
+      await teremock.start({ page })
 
       // * Create inline mock
-      const remove = mocker.add({
+      const remove = teremock.add({
         url: 'http://localhost:3000/api',
-        response: { body: { suggest: 'mocker.add suggest' } }
+        response: { body: { suggest: 'teremock.add suggest' } }
       })
       remove()
 
@@ -381,20 +378,20 @@ describe('teremock', () => {
       await sleep(50)
 
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
-      expect(text).not.toBe('200 mocker.add suggest')
-      await mocker.stop()
+      expect(text).not.toBe('200 teremock.add suggest')
+      await teremock.stop()
     })
 
     it('ttfb', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await mocker.start({ page })
+      await teremock.start({ page })
 
       // * Create instant inline mock
-      mocker.add({
+      teremock.add({
         url: 'http://localhost:3000/api',
-        response: { body: { suggest: 'mocker.add suggest', ttfb: 0 } },
+        response: { body: { suggest: 'teremock.add suggest', ttfb: 0 } },
       })
 
       // * Invoking GET request to `/api`
@@ -403,16 +400,16 @@ describe('teremock', () => {
       // * Awaiting less than initial sleep (30 ms), but more than inline mocked sleep (0 ms)
       await sleep(1)
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
-      expect(text).toBe('200 mocker.add suggest')
-      await mocker.stop()
+      expect(text).toBe('200 teremock.add suggest')
+      await teremock.stop()
     })
 
     it('race condition', async () => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await mocker.start({ page })
-      mocker.add({
+      await teremock.start({ page })
+      teremock.add({
         url: 'http://localhost:3000/api',
         query: { q: 'a' },
         response: {
@@ -421,7 +418,7 @@ describe('teremock', () => {
         }
       })
 
-      mocker.add({
+      teremock.add({
         url: 'http://localhost:3000/api',
         query: { q: 'ab' },
         response: {
@@ -444,7 +441,7 @@ describe('teremock', () => {
       await sleep(150)
       const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
       expect(text2).toBe('200 custom A')
-      await mocker.stop()
+      await teremock.stop()
     })
   })
 })

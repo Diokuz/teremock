@@ -3,9 +3,7 @@ const path = require('path')
 const { spawn } = require('child_process')
 const puppeteer = require('puppeteer')
 const waitPort = require('wait-port')
-const rimraf = require('rimraf')
 const signale = require('signale')
-const sinon = require('sinon')
 const mocker = require('../../').default
 
 async function sleep(time) {
@@ -20,12 +18,11 @@ let server
 let browser
 
 async function before() {
-  rimraf.sync(mocksDir)
-
   const serverPath = path.resolve(__dirname, 'index.js')
   browser = await puppeteer.launch(process.env.D ? {
     headless: false,
     slowMo: 80,
+    devtools: true,
   } : {})
 
   page = await browser.newPage()
@@ -34,7 +31,7 @@ async function before() {
   server = spawn('node', [serverPath], { detached: true })
   server.stdout.on('data', function(data) {
     signale.info(data.toString())
-  });
+  })
   await waitPort({ host: 'localhost', port: 3000 })
 }
 
@@ -45,29 +42,14 @@ async function after() {
 
 async function run() {
   await before()
-
-  /**
-   * This is an antipattern, dont do that!
-   *
-   * Whats happened here?
-   * Mocker intercepts navigation request and mocks it (you could find it in __teremocks__ folder).
-   * So, if you change `index.html`, nothing happens, because you already
-   * mocked old `index.html` version.
-   *
-   * Start your mocker _after_ await page.goto.
-   */
   await mocker.start({ page, wd: mocksDir })
   await page.goto('http://localhost:3000')
-
-  await page.click('input[name="firstname"]')
-  await page.keyboard.type('Firstname', { delay: 100 })
-  await page.click('input[name="lastname"]')
-  await page.keyboard.type('Lastname', { delay: 100 })
-  await page.click('#submit')
-  await mocker.connections()
-
   await mocker.stop()
   await after()
 }
 
-run()
+run().catch((e) => {
+  process.exitCode = 1
+  console.error(e.message)
+  process.kill(-server.pid)
+})

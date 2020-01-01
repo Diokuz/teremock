@@ -17,10 +17,18 @@ app.get('/', (req, res) => {
   res.send(htmlContent)
 })
 
-app.post('/form-submit', (req, res) => {
-  signale.info(`get /api`, req.body)
+app.get('/after-submit-page', (req, res) => {
+  signale.info(`entering /after-submit-page`)
 
-  res.send(`Submitted with form-data: ${JSON.stringify(req.body, null, '  ')}`)
+  res.send('TADA!')
 })
+
+/**
+ * Redirection route is disabled, but redirection works, because of mocks.
+ */
+
+// app.post('/form-submit', (req, res) => {
+//   res.redirect(301, `/after-submit-page?firstname=${req.body.firstname}`)
+// })
 
 app.listen(3000, () => signale.info('http://localhost:3000'))

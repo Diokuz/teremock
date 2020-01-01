@@ -1,9 +1,9 @@
 import debug from 'debug'
-import { Request, Response, DrivetResponse } from '../types'
+import { Request, Response, DriverResponse } from '../types'
 
 const logger = debug('teremock:puppeteer:response')
 
-export async function extractPuppeteerResponse(puppeteerResponse): Promise<DrivetResponse> {
+export async function extractPuppeteerResponse(puppeteerResponse): Promise<DriverResponse> {
   const puppeteerRequest = puppeteerResponse.request()
 
   let requestBody: any
@@ -14,8 +14,12 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
   } catch (e) {
     logger('« puppeteerResponse.json() error:', e.message)
 
-    responseBody = await puppeteerResponse.text()
-    logger(`« response body starts with: ${responseBody.substr(0, 100)}`)
+    try {
+      responseBody = await puppeteerResponse.text()
+      logger(`« response body starts with: ${responseBody.substr(0, 100)}`)
+    } catch (e) {
+      logger('« puppeteerResponse.text() error:', e.message)
+    }
   }
 
   try {

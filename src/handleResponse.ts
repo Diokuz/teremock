@@ -1,7 +1,7 @@
 import { debug } from './logger'
 import { blacklist } from './utils'
 import getMockId from './mock-id'
-import { Options, Storage } from './types'
+import { Options, Storage, Request, Response } from './types'
 
 const logger = debug('teremock:response')
 
@@ -11,10 +11,15 @@ type Params = Options & {
   storage: Storage
 }
 
+type Arg = {
+  request: Request
+  response: Response
+}
+
 export default function createHandler(initialParams) {
   logger('creating response handler')
 
-  return async function handleResponse({ request, response: pResponse }, extraParams = {}) {
+  return async function handleResponse({ request, response: pResponse }: Arg, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
     const { storage, reqSet, ci, skipResponseHeaders } = params
 
@@ -34,7 +39,8 @@ export default function createHandler(initialParams) {
     }
 
     const bodyStr: string = typeof request.body === 'string' ? request.body : JSON.stringify(request.body)
-    const mockId = getMockId({ ...request, naming: interceptor.naming, name: interceptor.name, body: bodyStr })
+    const naming = interceptor.naming ?? {}
+    const mockId = getMockId({ ...request, naming, name: interceptor.name, body: bodyStr })
     const mockExist: boolean = await storage.has(mockId)
     const hasResp = !!interceptor.response
     const isPassable = interceptor.pass

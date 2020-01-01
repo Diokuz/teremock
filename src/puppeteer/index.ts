@@ -25,20 +25,20 @@ class PuppeteerDriver implements Driver {
     }
 
     this.page = page
-    this.page.setRequestInterception(true)
+    this.setRequestInterception(true)
     pagesSet.add(page)
 
     this.page.on('close', () => {
-      this.page.setRequestInterception(false)
+      this.setRequestInterception(false)
       pagesSet.delete(this.page)
     })
   }
 
-  setRequestInterception(arg: boolean) {
-    this.page.setRequestInterception(arg)
+  public async setRequestInterception(arg: boolean) {
+    await this.page.setRequestInterception(arg)
   }
 
-  onRequest(fn: OnRequestHandler) {
+  public onRequest(fn: OnRequestHandler) {
     const handler = async (interceptedRequest) => {
       const { request, abort, next, respond } = await extractPuppeteerRequest(interceptedRequest)
 
@@ -48,14 +48,14 @@ class PuppeteerDriver implements Driver {
     // Intercepting all requests and respinding with mocks
     this.page.on('request', handler)
 
-    return () => {
-      this.page.setRequestInterception(false)
+    return async () => {
+      await this.setRequestInterception(false)
       pagesSet.delete(this.page)
-      this.page.off('request', handler)
+      await this.page.off('request', handler)
     }
   }
 
-  onResponse(fn: OnResponseHandler) {
+  public onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
       const { request, response } = await extractPuppeteerResponse(interceptedResponse)
 
@@ -68,14 +68,10 @@ class PuppeteerDriver implements Driver {
     return () => this.page.off('response', handler)
   }
 
-  onClose(fn) {
+  public onClose(fn) {
     this.page.on('close', fn)
 
     return () => this.page.off('close', fn)
-  }
-
-  getPageUrl() {
-    return this.page.url()
   }
 }
 

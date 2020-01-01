@@ -1,7 +1,7 @@
 import signale, { debug } from './logger'
 import { findInterceptor, parseUrl } from './utils'
 import getMockId from './mock-id'
-import { Options, Response, Storage, Interceptor } from './types'
+import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
@@ -11,7 +11,6 @@ type Params = Options & {
   reqSet: Set<string>
   _onReqStarted: Function
   _onReqsReject: Function
-  pageUrl: () => string
   storage: Storage
 }
 
@@ -21,22 +20,47 @@ async function sleep(time) {
   })
 }
 
-async function respondWithDelay(respond, resp: Response, interceptor: Interceptor) {
-  const ttfb = resp?.ttfb ?? 0
-  const actualDelay: number = typeof ttfb === 'function' ? ttfb() : ttfb
+type BeforeRespondArg = {
+  respond: (response: Response, interceptor: Interceptor) => void
+  request: Request
+  response: DefResponse
+  interceptor: Interceptor
+  mog: Function
+}
 
-  logger('actualDelay', actualDelay)
+async function beforeRespond({ respond, request, response, mog, interceptor }: BeforeRespondArg) {
+  let resp: Response
 
-  await sleep(Math.floor(actualDelay))
+  if (typeof response === 'function') {
+    mog(`» response is a function, responding with its returns`)
+    resp = await response(request)
+    mog(`» response() returns`, resp)
+  } else {
+    const ttfb = response?.ttfb ?? 0
+    const actualDelay: number = typeof ttfb === 'function' ? ttfb() : ttfb
 
-  const bodyStr = getBodyStr(resp.body)
+    mog('» actualDelay', actualDelay)
+    await sleep(Math.floor(actualDelay))
 
-  respond({ ...resp, body: bodyStr }, interceptor)
+    const bodyStr = getBodyStr(response.body)
+
+    mog('» responding with', bodyStr.slice(100))
+    // @ts-ignore
+    resp = { ...response, body: bodyStr }
+  }
+
+  if (resp.status >= 300 && resp.status < 400) {
+    const { body, ...rest } = resp
+    // @ts-ignore
+    resp = rest
+  }
+
+  respond(resp, interceptor)
 }
 
 // Need type string here
 // https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestrespondresponse
-const getBodyStr = (body): string => typeof body === 'string' ? body : JSON.stringify(body)
+const getBodyStr = (body): string => typeof body === 'string' ? body : JSON.stringify(body ?? '')
 
 export default function createHandler(initialParams) {
   logger('creating request handler')
@@ -69,14 +93,16 @@ export default function createHandler(initialParams) {
     mog(`interceptor found`, interceptor)
 
     if (interceptor.pass) {
-      mog(`» mock.pass is true, sending it to real server next(interceptor)`)
+      mog(`» interceptor.pass is true, sending it to real server next(interceptor)`)
       next(interceptor)
       return
     }
 
     if (interceptor.response) {
-      mog(`» mock.response defined, responding with it`)
-      await respondWithDelay(respond, interceptor.response, interceptor)
+      mog(`» interceptor.response defined, responding with it`)
+
+      await beforeRespond({ request, response: interceptor.response, respond, interceptor, mog })
+
       return
     }
 
@@ -96,7 +122,7 @@ export default function createHandler(initialParams) {
 
       mog(`» successfully read from "${mockId}", responding`)
 
-      await respondWithDelay(respond, resp, interceptor)
+      await beforeRespond({ request, response: resp, respond, interceptor, mog })
     } else {
       mog(`» mock does not exist!`)
 

@@ -1,3 +1,27 @@
+export type Request = {
+  url: string
+  method: string
+  headers: Record<string, string>
+  body?: string | Record<string, any>
+  resourceType: string
+}
+
+export type Response = {
+  url: string
+  status: number
+  headers: Record<string, string>
+  ttfb: (() => number) | number
+  body?: string | Record<string, any>
+  // @todo выпилить, это какой-то костыль для puppeteer, сделать по-другому
+  __meta: {
+    request: Request
+    interceptor: Interceptor
+  }
+}
+
+type ResponseFunc = (req: Request) => Promise<any>
+export type DefResponse = Partial<Response> | ResponseFunc
+
 type ListItem = string | string[]
 
 type List = ListItem[]
@@ -39,7 +63,7 @@ export type Interceptor = {
   body?: Record<string, any>
   pass: boolean
   naming?: Naming
-  response?: Response
+  response?: DefResponse
 }
 
 export type UserInterceptor = {
@@ -50,7 +74,8 @@ export type UserInterceptor = {
   query?: Record<string, any>
   body?: Record<string, any>
   pass?: boolean
-  response?: Response | any
+  naming?: Naming
+  response?: DefResponse
 }
 
 export type Options = {
@@ -64,50 +89,30 @@ export type Options = {
 
 export type UserOptions = {
   page?: any
+  wd?: string
   interceptors?: Record<string, UserInterceptor>
   skipResponseHeaders?: string[]
 }
 
-export type Request = {
-  url: string
-  method: string
-  headers: Record<string, string>
-  body?: string | Record<string, any>
-  resourceType: string
-}
-
-export type Response = {
-  url: string
-  status: number
-  headers: Record<string, string>
-  ttfb: (() => number) | number
-  body?: string | Record<string, any>
-  __meta: {
-    request: Request
-    interceptor: Interceptor
-  }
-}
-
-export type DrivetRequest = {
+export type DriverRequest = {
   request: Request
   abort: Function
   next: Function
   respond: (data: any, interceptor: Interceptor) => void
 }
 
-export type DrivetResponse = {
+export type DriverResponse = {
   request: Request
   response: Response
 }
 
-export type OnRequestHandler = (arg: DrivetRequest) => void
+export type OnRequestHandler = (arg: DriverRequest) => void
 
-export type OnResponseHandler = (arg: DrivetResponse) => void
+export type OnResponseHandler = (arg: DriverResponse) => void
 
 export interface Driver {
   setRequestInterception: (switchOn: boolean) => void
   onRequest: (fn: OnRequestHandler) => Function
   onResponse: (fn: OnResponseHandler) => Function
   onClose: (fn: any) => Function
-  getPageUrl: () => string
 }

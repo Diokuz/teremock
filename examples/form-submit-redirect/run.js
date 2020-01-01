@@ -1,8 +1,8 @@
+const fs = require('fs')
 const path = require('path')
 const { spawn } = require('child_process')
 const puppeteer = require('puppeteer')
 const waitPort = require('wait-port')
-const rimraf = require('rimraf')
 const signale = require('signale')
 const mocker = require('../../').default
 
@@ -18,12 +18,11 @@ let server
 let browser
 
 async function before() {
-  rimraf.sync(mocksDir)
-
   const serverPath = path.resolve(__dirname, 'index.js')
   browser = await puppeteer.launch(process.env.D ? {
     headless: false,
     slowMo: 80,
+    devtools: true,
   } : {})
 
   page = await browser.newPage()
@@ -32,7 +31,7 @@ async function before() {
   server = spawn('node', [serverPath], { detached: true })
   server.stdout.on('data', function(data) {
     signale.info(data.toString())
-  });
+  })
   await waitPort({ host: 'localhost', port: 3000 })
 }
 
@@ -42,16 +41,26 @@ async function after() {
 }
 
 async function run() {
+  const navigationInterceptor = {
+    url: '/form-submit',
+    resourceTypes: 'document'
+  }
+
   await before()
-
+  await mocker.start({ page, wd: mocksDir, interceptors: { navigationInterceptor } })
   await page.goto('http://localhost:3000')
-  await mocker.start({ page, wd: mocksDir })
-
-  await page.click('button')
-  await sleep(99999)
-
+  await page.click('input[name="firstname"]')
+  await page.keyboard.type('Firstname', { delay: 100 })
+  await page.click('input[name="lastname"]')
+  await page.keyboard.type('Lastname', { delay: 100 })
+  await page.click('#submit')
+  await mocker.connections()
   await mocker.stop()
   await after()
 }
 
-run()
+run().catch((e) => {
+  process.exitCode = 1
+  console.error(e.message)
+  process.kill(-server.pid)
+})

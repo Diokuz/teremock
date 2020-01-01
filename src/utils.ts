@@ -67,24 +67,6 @@ export const findInterceptor = ({ interceptors, request }: InParams): Intercepto
   return typeof matchedMockKey === 'string' ? interceptors[matchedMockKey] : null
 }
 
-function sameOrigin(url1, url2) {
-  const p1 = new URL(url1)
-  const p2 = new URL(url2)
-
-  return p1.host === p2.host && p1.protocol === p2.protocol
-}
-
-export function isPassable({ pageUrl, reqUrl, method, pass }) {
-  const { methods, urls } = pass
-
-  const isSameOrigin = sameOrigin(pageUrl, reqUrl)
-  const hasSameOriginPass = urls.find((url) => url === 'same-origin')
-  const isMethodPassable = hasMatch(methods, method)
-  const isUrlPassable = hasMatch(urls, reqUrl) || (hasSameOriginPass && isSameOrigin)
-
-  return isUrlPassable && isMethodPassable
-}
-
 // duplicates are not supported
 export function getQuery(url) {
   const urlObj = new URL(url)
@@ -154,10 +136,10 @@ export function blacklist(source: Record<string, any>, list: string[]) {
 
 export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg: string): Interceptor {
   const name = uint.name || nameArg
-  const validName = name.replace(/[^a-z0-9_-]+/, '')
+  const validName = name.toLowerCase().replace(/[^a-z0-9_-]+/, '')
 
-  if (name !== validName) {
-    throw new Error(`invalid mocks name "${name}"! only letters, digits, - and _ are allowed.`)
+  if (name.toLowerCase() !== validName) {
+    throw new Error(`invalid interceptor name "${name}"! only letters, digits, - and _ are allowed.`)
   }
 
   const defaultMethods = DEFAULT_INTERCEPTOR_CAPTURE.methods
@@ -170,7 +152,7 @@ export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg: str
     ...uint,
     methods,
     resourceTypes,
-    name,
+    name: validName,
   }
 }
 
