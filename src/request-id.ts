@@ -5,7 +5,7 @@ import { URL } from 'url'
 // @ts-ignore
 import queryString from 'query-string'
 import { humanize } from './words-hash'
-import { Naming } from './types'
+import { Naming, Headers } from './types'
 
 // Length of query string after which three-words-naming is switching on
 const MAX_QUERY_NAME_LENGTH = 25
@@ -13,7 +13,7 @@ const MAX_QUERY_NAME_LENGTH = 25
 type Params = {
   url: string
   method?: string
-  headers?: Record<string, string>
+  headers?: Headers
   body?: string
   naming: Naming
 }

@@ -79,7 +79,11 @@ export function parseUrl(url) {
   }
 }
 
-export function blacklist(source: Record<string, any>, list: string[]) {
+export function blacklist(source: Record<string, string | string[]> | undefined, list: string[]): Record<string, string | string[]> | undefined {
+  if (typeof source === 'undefined') {
+    return source
+  }
+
   const set = new Set(list.map(l => l.toLowerCase()))
 
   return Object.keys(source).reduce((acc, key) => {

@@ -1,7 +1,9 @@
+export type Headers = Record<string, string | string[]>
+
 export type Request = {
   url: string
   method: string
-  headers: Record<string, string>
+  headers?: Headers
   body?: string | Record<string, any>
   resourceType: string
 }
@@ -9,7 +11,7 @@ export type Request = {
 export type Response = {
   url: string
   status: number
-  headers: Record<string, string>
+  headers?: Headers
   ttfb: (() => number) | number
   body?: string | Record<string, any>
 }

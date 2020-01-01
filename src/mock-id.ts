@@ -1,5 +1,5 @@
 import getRequestId from './request-id'
-import { Naming } from './types'
+import { Naming, Headers } from './types'
 
 type GetMockIdParams = {
   url: string
@@ -7,7 +7,7 @@ type GetMockIdParams = {
   name?: string
   method?: string
   body?: string
-  headers?: Record<string, string>
+  headers?: Headers
 }
 
 /**
