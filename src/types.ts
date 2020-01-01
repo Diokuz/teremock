@@ -12,11 +12,6 @@ export type Response = {
   headers: Record<string, string>
   ttfb: (() => number) | number
   body?: string | Record<string, any>
-  // @todo выпилить, это какой-то костыль для puppeteer, сделать по-другому
-  __meta: {
-    request: Request
-    interceptor: Interceptor
-  }
 }
 
 type ResponseFunc = (req: Request) => Promise<any>
@@ -26,9 +21,10 @@ type ListItem = string | string[]
 
 type List = ListItem[]
 
+// @todo generic, do I really need it?
 export interface Storage {
-  get: (key: string) => Promise<any>
-  set: (key: string, data: any) => Promise<void>
+  get: (key: string) => Promise<{ request: Request, response: Response }>
+  set: (key: string, data: { request: Request, response: Response }) => Promise<void>
   has: (key: string) => Promise<boolean>
   setWd: (wd: string) => void
 }
@@ -94,6 +90,11 @@ export type UserOptions = {
   skipResponseHeaders?: string[]
 }
 
+export type Meta = {
+  request: Request
+  interceptor: Interceptor
+}
+
 export type DriverRequest = {
   request: Request
   abort: Function
@@ -104,6 +105,7 @@ export type DriverRequest = {
 export type DriverResponse = {
   request: Request
   response: Response
+  __meta: Meta
 }
 
 export type OnRequestHandler = (arg: DriverRequest) => void
@@ -116,3 +118,11 @@ export interface Driver {
   onResponse: (fn: OnResponseHandler) => Function
   onClose: (fn: any) => Function
 }
+
+export type Spy = {
+  called: boolean
+  calledOnce: boolean
+  callCount: number
+  dismiss: () => void
+}
+export type SpyTuple = [Interceptor, Spy]

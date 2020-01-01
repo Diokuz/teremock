@@ -1,7 +1,7 @@
 import { debug } from './logger'
 import { blacklist } from './utils'
 import getMockId from './mock-id'
-import { Options, Storage, Request, Response } from './types'
+import { Options, Storage, Request, Response, Meta } from './types'
 
 const logger = debug('teremock:response')
 
@@ -14,12 +14,13 @@ type Params = Options & {
 type Arg = {
   request: Request
   response: Response
+  __meta: Meta
 }
 
 export default function createHandler(initialParams) {
   logger('creating response handler')
 
-  return async function handleResponse({ request, response: pResponse }: Arg, extraParams = {}) {
+  return async function handleResponse({ request, response: pResponse, __meta }: Arg, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
     const { storage, reqSet, ci, skipResponseHeaders } = params
 
@@ -30,7 +31,7 @@ export default function createHandler(initialParams) {
 
     logger(`» intercepted response with method "${request.method}" and url "${request.url}"`)
 
-    const interceptor = response.__meta.interceptor
+    const interceptor = __meta.interceptor
 
     if (!interceptor) {
       logger(`» interceptor not provided in response object, return`)
@@ -51,8 +52,7 @@ export default function createHandler(initialParams) {
      */
     if (!ci && !mockExist && !hasResp && !isPassable) {
       mog(`« preparing to set a new mock "${mockId}"`)
-      const { __meta, ...data } = response
-      await storage.set(mockId, { request, response: data })
+      await storage.set(mockId, { request, response })
     } else {
       mog(`« mock was not stored, because of any true values:`)
       mog(`« mockExist is "${mockExist}", !!interceptor.response is "${hasResp}", interceptor.pass is "${isPassable}"`)

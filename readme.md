@@ -32,9 +32,9 @@ await teremock.start({
 
 ## How it works
 
-First, `teremock` intercepts all confi requegured requests and tries to find corresponding responses in mock files. Generated filename depends on request `url`, `method` and `body` – so, you always know, do you have a mock for that particular request or not. If you have it – you will get it as a response. If not – request will go to the real backend.
+First, `teremock` intercept request (all xhr/fetch requests by default). Then, it looks for the mock file. If mock file exist, you get response from it. If not, request goes to the real backend.
 
-Second, `teremock` intercepts all responds, and writes them to the **filesystem**,
+Second, `teremock` intercepts all responds, and writes them to the **filesystem** as mock files,
 
 ### or not.
 
@@ -264,3 +264,14 @@ Both `mocker.start()` and `mocker.stop()` return a `Promise`.
 ### mocker.stop()
 
 ### mocker.add()
+
+### mocker.spy(interceptor)
+
+Example:
+
+```ts
+const spy = mocker.spy({ url: 'example.com', query: { id: '123' } })
+await stuff()
+expect(spy.calledOnce).toBe(true)
+spy.dismiss()
+```

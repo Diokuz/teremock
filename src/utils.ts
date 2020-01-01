@@ -3,63 +3,52 @@ import debug from 'debug'
 import { Request, Options, UserOptions, Interceptor, UserInterceptor } from './types'
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 
-const logger = debug('teremock:utils')
 const loggerint = debug('teremock:utils:interceptor')
 
 type InParams = {
   interceptors: Record<string, Interceptor>
-  request: {
-    url: string
-    method: string
-    resourceType?: string
-  }
+  request: Request
 }
 
-// @todo nanomatch
-export const hasMatch = (arr, str) => {
-  const lowercasedStr = str.toLowerCase()
+export const isInterceptorMatched = (interceptor: Interceptor, request: Request) => {
+  const { url, method, resourceType = 'xhr' } = request
 
-  return !!arr.find((el) => {
-    return el === '*' || lowercasedStr.includes(el.toLowerCase())
-  })
+  return Object.keys(interceptor).reduce<boolean>((acc, key) => {
+    const value = interceptor[key]
+
+    // Nothing to compare === wildcard (for given `key`)
+    if (typeof value === 'undefined' || value === '*' || (value?.has?.('*'))) {
+      return acc
+    }
+
+    switch (key) {
+      case 'url':
+        return acc && url.includes(value)
+      case 'methods':
+        return acc && value.has(method.toLowerCase())
+      case 'query':
+        const query = getQuery(url)
+
+        return (
+          acc &&
+          Object.keys(value).reduce((a, k) => {
+            return a && value[k] === query[k]
+          }, true)
+        )
+      case 'resourceTypes':
+        return acc && value.has(resourceType.toLowerCase())
+      default:
+        return acc
+    }
+  }, true)
 }
 
 export const findInterceptor = ({ interceptors, request }: InParams): Interceptor | null => {
-  const { url, method, resourceType = 'xhr' } = request
-  loggerint(`entering findInterceptor with args`, interceptors, request)
-
   const matchedMockKey = Object.keys(interceptors).find((key) => {
     loggerint(`checking key`, key)
     const interceptor = interceptors[key] as Interceptor
 
-    return Object.keys(interceptor).reduce<boolean>((acc, key) => {
-      const value = interceptor[key]
-
-      // Nothing to compare === wildcard (for given `key`)
-      if (typeof value === 'undefined' || value === '*' || (value?.has?.('*'))) {
-        return acc
-      }
-
-      switch (key) {
-        case 'url':
-          return acc && url.includes(value)
-        case 'methods':
-          return acc && value.has(method.toLowerCase())
-        case 'query':
-          const query = getQuery(url)
-
-          return (
-            acc &&
-            Object.keys(value).reduce((a, k) => {
-              return a && value[k] === query[k]
-            }, true)
-          )
-        case 'resourceTypes':
-          return acc && value.has(resourceType.toLowerCase())
-        default:
-          return acc
-      }
-    }, true)
+    return isInterceptorMatched(interceptor, request)
   })
 
   loggerint(`found an interceptor`, matchedMockKey)
@@ -89,38 +78,6 @@ export function parseUrl(url) {
     location: origin + pathname,
   }
 }
-
-export function isFilterMatched(matchFilter, request: Request) {
-  // location have no query params, url has
-  const { method, url } = request
-  const query = getQuery(url)
-  const requestLocation = (url ?? '').split(/[?#]/)[0].toLowerCase()
-
-  logger(`isFilterMatched url`, matchFilter, request)
-
-  const isMatched = Object.keys(matchFilter).reduce((acc, key) => {
-    switch (key) {
-      case 'method':
-        return acc && matchFilter[key].toLowerCase() === method.toLowerCase()
-      case 'baseUrl':
-        return acc && requestLocation.startsWith(matchFilter[key].toLowerCase())
-      case 'url':
-        return acc && requestLocation === matchFilter[key].toLowerCase()
-      case 'query':
-        return (
-          acc &&
-          Object.keys(matchFilter[key]).reduce((a, k) => {
-            return a && matchFilter[key][k] === query[k]
-          }, true)
-        )
-    }
-  }, true)
-
-  return isMatched
-}
-
-export const isMockMatched = isFilterMatched
-export const isSpyMatched = isFilterMatched
 
 export function blacklist(source: Record<string, any>, list: string[]) {
   const set = new Set(list.map(l => l.toLowerCase()))

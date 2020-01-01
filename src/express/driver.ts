@@ -1,4 +1,5 @@
 import got from 'got'
+import express from 'express'
 import { extractExpressRequest } from './request'
 import { extractGotResponse, ExtractedResponse } from './response'
 import { Driver, OnRequestHandler, OnResponseHandler, Request } from '../types'
@@ -12,12 +13,12 @@ const noop = () => {}
 
 class ExpressDriver implements Driver {
   private isActive: boolean
-  private app: any
+  private app: express.Application
   private env: Record<string, string>
   private onRequestHandler: OnRequestHandler
   private onResponseHandler: OnResponseHandler
 
-  constructor({ app, env }: any) {
+  constructor({ app, env }: { app: express.Application; env: Record<string, string> }) {
     logger.debug(`instantiating new driver`)
 
     if (appSet.has(app)) {
@@ -70,10 +71,10 @@ class ExpressDriver implements Driver {
                 request,
                 response: {
                   ...response,
-                  __meta: {
-                    ...response.__meta,
-                    interceptor,
-                  },
+                },
+                __meta: {
+                  request,
+                  interceptor,
                 },
               })
             } else {
@@ -84,12 +85,12 @@ class ExpressDriver implements Driver {
               this.onResponseHandler({
                 request,
                 response: {
-                  __meta: {
-                    request,
-                    interceptor,
-                  },
                   ...realResponse,
                   ttfb: t2 - timestamp,
+                },
+                __meta: {
+                  request,
+                  interceptor,
                 },
               })
             }

@@ -3,7 +3,7 @@ import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
 import signale from './logger'
-import { Storage } from './types'
+import { Storage, Request, Response } from './types'
 
 const loggerGet = debug('teremock:storage:get')
 const loggerSet = debug('teremock:storage:set')
@@ -18,10 +18,8 @@ type ConstructParams = {
 }
 
 type Json = {
-  request: {
-    url: string,
-  },
-  response: any,
+  request: Request,
+  response: Response,
 }
 
 type GetRet = {

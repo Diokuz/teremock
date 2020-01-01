@@ -1,9 +1,10 @@
+import express from 'express'
 import ExpressDriver from './driver'
 import Teremock from '../teremock'
 import { UserOptions } from '../types'
 
 type ExpressUserOptions = UserOptions & {
-  app: any
+  app: express.Application
   env: Record<string, string>
 }
 

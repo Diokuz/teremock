@@ -6,8 +6,8 @@ const logger = debug('teremock:puppeteer:response')
 export async function extractPuppeteerResponse(puppeteerResponse): Promise<DriverResponse> {
   const puppeteerRequest = puppeteerResponse.request()
 
-  let requestBody: any
-  let responseBody: any
+  let requestBody: string | Record<string, any>
+  let responseBody: string | Record<string, any> | undefined
 
   try {
     responseBody = await puppeteerResponse.json()
@@ -16,7 +16,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
 
     try {
       responseBody = await puppeteerResponse.text()
-      logger(`« response body starts with: ${responseBody.substr(0, 100)}`)
+      logger(`« response body starts with: ${responseBody?.substr(0, 100)}`)
     } catch (e) {
       logger('« puppeteerResponse.text() error:', e.message)
     }
@@ -44,10 +44,9 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     headers: puppeteerResponse.headers(),
     body: responseBody,
     ttfb: timestamp - puppeteerRequest.timestamp,
-    __meta: puppeteerRequest.__meta,
   }
 
   logger(`got the response, sending it to teremock core`)
 
-  return { request, response }
+  return { request, response, __meta: puppeteerRequest.__meta }
 }

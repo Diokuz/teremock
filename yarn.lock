@@ -562,6 +562,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/puppeteer@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@types/puppeteer@npm:2.0.0"
+  dependencies:
+    "@types/node": "*"
+  checksum: effa8e5d6cb681b03ceac5410932d04548c6d271bcfbbdffd6dcd1667e7ff680715e1c96912b15a73ab6f92d756b1e82e0a8e9af384a700c9754c17b32bc1be1
+  languageName: node
+  linkType: hard
+
 "@types/range-parser@npm:*":
   version: 1.2.3
   resolution: "@types/range-parser@npm:1.2.3"
@@ -5553,6 +5562,7 @@ __metadata:
     "@types/express": ^4.17.2
     "@types/jest": ^24.0.25
     "@types/node": ^13.1.2
+    "@types/puppeteer": ^2.0.0
     "@types/signale": ^1.2.1
     "@yarnpkg/pnpify": ^2.0.0-rc.12
     body-parser: ^1.19.0

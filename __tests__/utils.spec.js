@@ -1,4 +1,4 @@
-const { findInterceptor, hasMatch, getQuery, isFilterMatched, blacklist, userOptionsToOptions } = require('../dist/utils')
+const { findInterceptor, getQuery, isInterceptorMatched, blacklist, userOptionsToOptions } = require('../dist/utils')
 const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../dist/consts')
 
 describe('findInterceptor', () => {
@@ -108,22 +108,6 @@ describe('findInterceptor', () => {
   })
 })
 
-describe('hasMatch', () => {
-  it('*', () => {
-    const urls = ['*']
-    const url = 'http://example.com'
-
-    expect(hasMatch(urls, url)).toBe(true)
-  })
-
-  it('http://example1.com', () => {
-    const urls = ['http://example1.com']
-    const url = 'http://example2.com'
-
-    expect(hasMatch(urls, url)).toBe(false)
-  })
-})
-
 describe('getQuery', () => {
   it('no query', () => {
     expect(getQuery('http://example.com')).toEqual({})
@@ -134,54 +118,47 @@ describe('getQuery', () => {
   })
 })
 
-describe('isFilterMatched', () => {
+describe('isInterceptorMatched', () => {
   it('same url', () => {
-    const filter = { url: 'http://example.com' }
+    const interceptor = { url: 'http://example.com' }
     const request = { url: 'http://example.com' }
 
-    expect(isFilterMatched(filter, request)).toBe(true)
+    expect(isInterceptorMatched(interceptor, request)).toBe(true)
   })
 
   it('different url', () => {
-    const filter = { url: 'http://example.com' }
+    const interceptor = { url: 'http://example.com' }
     const request = { url: 'http://example2.com' }
 
-    expect(isFilterMatched(filter, request)).toBe(false)
+    expect(isInterceptorMatched(interceptor, request)).toBe(false)
   })
 
   it('baseUrl must match', () => {
-    const filter = { baseUrl: 'http://example.com' }
+    const interceptor = { baseUrl: 'http://example.com' }
     const request = { url: 'http://example.com/path/to/api' }
 
-    expect(isFilterMatched(filter, request)).toBe(true)
-  })
-
-  it('url must not works as baseUrl', () => {
-    const filter = { url: 'http://example.com' }
-    const request = { url: 'http://example.com/path/to/api' }
-
-    expect(isFilterMatched(filter, request)).toBe(false)
+    expect(isInterceptorMatched(interceptor, request)).toBe(true)
   })
 
   it('query must not affect url match', () => {
-    const filter = { url: 'http://example.com' }
+    const interceptor = { url: 'http://example.com' }
     const request = { url: 'http://example.com?foo=bar' }
 
-    expect(isFilterMatched(filter, request)).toBe(true)
+    expect(isInterceptorMatched(interceptor, request)).toBe(true)
   })
 
   it('query in filter and in url may be in different form, match', () => {
-    const filter = { url: 'http://example.com', query: { foo: 'bar' } }
+    const interceptor = { url: 'http://example.com', query: { foo: 'bar' } }
     const request = { url: 'http://example.com?foo=bar' }
 
-    expect(isFilterMatched(filter, request)).toBe(true)
+    expect(isInterceptorMatched(interceptor, request)).toBe(true)
   })
 
   it('query in filter and in url may be in different form, no match', () => {
-    const filter = { url: 'http://example.com', query: { foo: 'baz' } }
+    const interceptor = { url: 'http://example.com', query: { foo: 'baz' } }
     const request = { url: 'http://example.com?foo=bar' }
 
-    expect(isFilterMatched(filter, request)).toBe(false)
+    expect(isInterceptorMatched(interceptor, request)).toBe(false)
   })
 })
 

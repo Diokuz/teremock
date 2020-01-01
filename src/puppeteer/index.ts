@@ -57,9 +57,7 @@ class PuppeteerDriver implements Driver {
 
   public onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
-      const { request, response } = await extractPuppeteerResponse(interceptedResponse)
-
-      fn({ request, response })
+      fn(await extractPuppeteerResponse(interceptedResponse))
     }
 
     // Intercepting all requests and respinding with mocks

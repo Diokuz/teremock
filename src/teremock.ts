@@ -8,8 +8,8 @@ import FileStorage from './storage'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
-import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor } from './types'
-import { isSpyMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
+import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor, SpyTuple, Spy } from './types'
+import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
 import PuppeteerDriver from './puppeteer'
 import { DEFAULT_OPTIONS } from './consts'
 import { humanize } from './words-hash'
@@ -29,14 +29,14 @@ class Teremock {
   private removeCloseHandler: Function | null
   private removeRequestHandler: Function | null
   private removeResponseHandler: Function | null
-  protected driver: Driver
+  protected driver: Driver | undefined
   private _startPromise: Promise<any> | void
   private _resolveReqs: Function
   private _rejectReqs: Function
-  private _spies: any[]
+  private _spies: SpyTuple[]
   private _interceptors: Record<string, Interceptor>
 
-  constructor(opts?: any) {
+  constructor(opts?: { storage: Storage, driver: Driver }) {
     signale.debug(`new Mocker`)
     this.defaultOptions = Object.assign({}, DEFAULT_OPTIONS)
 
@@ -61,9 +61,11 @@ class Teremock {
     }
 
     if (this._spies.length > 0) {
-      this._spies.forEach(([spyFilter, spy]) => {
-        if (isSpyMatched(spyFilter, req)) {
+      this._spies.forEach(([interceptor, spy]) => {
+        if (isInterceptorMatched(interceptor, req)) {
           spy.called = true
+          spy.callCount++
+          spy.calledOnce = spy.callCount === 1
         }
       })
     }
@@ -189,10 +191,18 @@ class Teremock {
     return Promise.race([timeoutPromise, connectionsPromise])
   }
 
-  public spy(spyFilter: any) {
-    const spy = { called: false }
+  public spy(spyInterceptor: UserInterceptor) {
+    const interceptor = userInterceptorToInterceptor(spyInterceptor, 'spy')
+    const spy: Spy = {
+      callCount: 0,
+      calledOnce: false,
+      called: false,
+      dismiss: () => {
+        this._spies = this._spies.filter(([_i, s]) => s !== spy)
+      },
+    }
 
-    this._spies.push([spyFilter, spy])
+    this._spies.push([interceptor, spy])
 
     return spy
   }
@@ -200,7 +210,7 @@ class Teremock {
   /*
    * Waits for all connections to be completed and removes all handlers from the page
    */
-  public async stop(opts: any = {}) {
+  public async stop(opts: { safe?: boolean } = {}) {
     const { safe } = opts
     if (!this.alive) {
       if (safe) {
