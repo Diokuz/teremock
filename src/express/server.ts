@@ -53,15 +53,15 @@ const tes = {
             await expressTeremock.add(data)
             ws.send(JSON.stringify({ message: 'added' }))
             break
+          case 'remove':
+            await expressTeremock.remove(data)
+            ws.send(JSON.stringify({ message: 'removed' }))
+            break
           case 'stop':
             await expressTeremock.stop(data)
             ws.send(JSON.stringify({ message: 'stopped' }))
             break
         }
-
-        //log the received message and send it back to the client
-        console.log('received: %s', message)
-        // ws.send(`server: event message: ${message}`)
       })
 
       logger.info(`Client connected on ${port}`)

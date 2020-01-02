@@ -2,6 +2,7 @@ import isCi from 'is-ci'
 import { Options, Interceptor } from './types'
 
 export const DEFAULT_INTERCEPTOR_CAPTURE = {
+  name: '__teremock_buildin_capture',
   url: '*',
   methods: new Set('*'),
   pass: false,
@@ -10,6 +11,7 @@ export const DEFAULT_INTERCEPTOR_CAPTURE = {
 }
 
 export const DEFAULT_INTERCEPTOR_PASS = {
+  name: '__teremock_buildin_pass',
   url: '*',
   methods: new Set('*'),
   pass: true,

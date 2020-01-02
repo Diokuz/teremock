@@ -2,6 +2,7 @@ import { URL } from 'url'
 import debug from 'debug'
 import { Request, Options, UserOptions, Interceptor, UserInterceptor } from './types'
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
+import { humanize } from './words-hash'
 
 const loggerint = debug('teremock:utils:interceptor')
 
@@ -95,8 +96,8 @@ export function blacklist(source: Record<string, string | string[]> | undefined,
   }, {})
 }
 
-export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg: string): Interceptor {
-  const name = uint.name || nameArg
+export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg?: string): Interceptor {
+  const name = uint.name || nameArg || `teremock-add-${humanize(JSON.stringify(uint), 1)}-`
   const validName = name.toLowerCase().replace(/[^a-z0-9_-]+/, '')
 
   if (name.toLowerCase() !== validName) {

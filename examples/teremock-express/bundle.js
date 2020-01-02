@@ -143,13 +143,16 @@ var Tes = /** @class */ (function () {
     };
     Tes.prototype.add = function (userInterceptor) {
         return tslib_1.__awaiter(this, void 0, void 0, function () {
+            var _this = this;
             return tslib_1.__generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.startPromise];
                     case 1:
                         _a.sent();
                         this.socket.send(JSON.stringify({ method: 'add', data: userInterceptor }));
-                        return [2 /*return*/];
+                        return [2 /*return*/, function () {
+                                _this.socket.send(JSON.stringify({ method: 'remove', data: userInterceptor }));
+                            }];
                 }
             });
         });
@@ -194,7 +197,7 @@ async function run() {
     wd: [__dirname, '__teremocks__'],
   })
 
-  await _dist_express__WEBPACK_IMPORTED_MODULE_0___default.a.add({
+  const remove = await _dist_express__WEBPACK_IMPORTED_MODULE_0___default.a.add({
     query: { q: 'ab' },
     response: {
       body: { suggest: 'Congrat!!! This is inline (not a file) mock for q=ab' }
@@ -213,6 +216,11 @@ async function run() {
         suggest.innerText = `${status} ${j.suggest}`
       })
   })
+
+  setTimeout(() => {
+    remove()
+    suggest.innerText = `inline mock for 'ab' removed!`
+  }, 5 * 1000)
 }
 
 run()

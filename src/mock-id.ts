@@ -23,7 +23,7 @@ const getMockId = (params: GetMockIdParams) => {
 
   let pathId = name
 
-  if (!pathId) {
+  if (!pathId || pathId.startsWith('__')) {
     const slugs: string[] = pathname.split('/').filter((s) => !!s)
     slugs.unshift(hostname)
 

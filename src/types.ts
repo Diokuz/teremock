@@ -53,7 +53,7 @@ export type Pass = {
 }
 
 export type Interceptor = {
-  name?: string // from keys of UserInterceptor. If no name, hostname+path is used
+  name: string // from keys of UserInterceptor. If no name, hostname+path is used
   url: string
   methods: Set<string>
   resourceTypes: Set<string>

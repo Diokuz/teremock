@@ -18,16 +18,21 @@ await teremock.start({ page })
 
 ```js
 // server-side
-import teremock from 'teremock/express'
+import teremock from 'teremock/express/server'
 
-await teremock.start({
+await teremock.listen({
   app: expressApp,
   env: { myApi: 'http://example.com/api' },
 })
 
 // client-side
-// just make sure, you configured your test app to make request
+// make sure, you configured your test app to make request
 // `<test-app-host>/myApi` instead of `http://example.com/api`
+import teremock from 'teremock/express'
+
+await teremock.start()
+
+// async stuff which is making requests, excluding redirects
 ```
 
 ## How it works

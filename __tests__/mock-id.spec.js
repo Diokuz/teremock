@@ -9,9 +9,15 @@ it('generates non-empty string', () => {
 })
 
 it('custom name', () => {
-  const name = getMockId({ url: 'http://example.com/path/api', naming, name: 'api' })
+  const name = getMockId({ url: 'http://example.com/path/api', naming, name: 'alice-bob' })
 
-  expect(name).toBe('api--get')
+  expect(name).toBe('alice-bob--get')
+})
+
+it('uses url slugs for dirname if options.name starts with __', () => {
+  const name = getMockId({ url: 'http://foo.bar', name: '__alice-bob', naming })
+
+  expect(name).toBe('foo.bar--get')
 })
 
 it('generates same id for the same request', () => {

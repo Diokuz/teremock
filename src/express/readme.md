@@ -13,3 +13,9 @@ Key-value object, where `key` will be used to create routes of form `.../${key}`
 ### options.`app`
 
 Express application, which will be used to add env-key-based routes, and proxy requests to real backends.
+
+## Limitations
+
+1. Only browsers with WebSocket are supported
+2. Each browser instance needs its own server instance
+3. (for now) no support for teremock.spy() method

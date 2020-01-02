@@ -6,7 +6,7 @@ async function run() {
     wd: [__dirname, '__teremocks__'],
   })
 
-  await teremock.add({
+  const remove = await teremock.add({
     query: { q: 'ab' },
     response: {
       body: { suggest: 'Congrat!!! This is inline (not a file) mock for q=ab' }
@@ -25,6 +25,11 @@ async function run() {
         suggest.innerText = `${status} ${j.suggest}`
       })
   })
+
+  setTimeout(() => {
+    remove()
+    suggest.innerText = `inline mock for 'ab' removed!`
+  }, 5 * 1000)
 }
 
 run()

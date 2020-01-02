@@ -12,7 +12,6 @@ import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor, Sp
 import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
 import PuppeteerDriver from './puppeteer'
 import { DEFAULT_OPTIONS } from './consts'
-import { humanize } from './words-hash'
 
 const logger = debug('teremock')
 
@@ -152,8 +151,8 @@ class Teremock {
   }
 
   public add(userInterceptor: UserInterceptor, overwrite = false) {
-    const name = userInterceptor.name || `teremock-add-${humanize(JSON.stringify(userInterceptor), 1)}-`
-    const interceptor = userInterceptorToInterceptor(userInterceptor, name)
+    const interceptor = userInterceptorToInterceptor(userInterceptor)
+    const { name } = interceptor
 
     if (name in this._interceptors && !overwrite) {
       signale.error(`interceptor with name "${name}" already exists, pass second arg true if you want to overwrite it`)
@@ -170,6 +169,19 @@ class Teremock {
       const { [name]: omit, ...rest } = this._interceptors
       this._interceptors = rest
     }
+  }
+
+  public remove(userInterceptor: UserInterceptor) {
+    const interceptor = userInterceptorToInterceptor(userInterceptor)
+    const { name } = interceptor
+
+    if (!this._interceptors[name]) {
+      signale.error(`there is no interceptor with name "${name}"`)
+    }
+
+    const { [name]: _x, ...rest } = this._interceptors
+
+    this._interceptors = rest
   }
 
   /*

@@ -53,6 +53,10 @@ class Tes {
   public async add(userInterceptor: UserInterceptor) {
     await this.startPromise
     this.socket.send(JSON.stringify({ method: 'add', data: userInterceptor }))
+
+    return () => {
+      this.socket.send(JSON.stringify({ method: 'remove', data: userInterceptor }))
+    }
   }
 
   public async stop() {
