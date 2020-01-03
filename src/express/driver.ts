@@ -52,7 +52,7 @@ class ExpressDriver implements Driver {
         }
         const driverReq = await extractExpressRequest(req, res, realUrl, getRealResponse)
         const { request, onRespondPromise } = driverReq
-        const timestamp = Date.now()
+        // const timestamp = Date.now()
 
         logger.debug(`realUrl "${realUrl}"`)
 
@@ -80,13 +80,13 @@ class ExpressDriver implements Driver {
             } else {
               const { realResponse } = resolved
               sendResp = realResponse
-              const t2 = Date.now()
+              // const t2 = Date.now()
               logger.debug(`realResponse`, realResponse)
               this.onResponseHandler({
                 request,
                 response: {
                   ...realResponse,
-                  ttfb: t2 - timestamp,
+                  // ttfb: t2 - timestamp,
                 },
                 __meta: {
                   request,

@@ -24,7 +24,6 @@
     },
     "body": {
       "suggest": "book"
-    },
-    "ttfb": 108
+    }
   }
 }

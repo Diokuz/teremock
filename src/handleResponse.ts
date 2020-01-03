@@ -1,6 +1,5 @@
 import { debug } from './logger'
 import { blacklist } from './utils'
-import getMockId from './mock-id'
 import { Options, Storage, Request, Response, Meta } from './types'
 
 const logger = debug('teremock:response')
@@ -22,7 +21,7 @@ export default function createHandler(initialParams) {
 
   return async function handleResponse({ request, response: pResponse, __meta }: Arg, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { storage, reqSet, ci, skipResponseHeaders } = params
+    const { storage, reqSet, ci, skipResponseHeaders, getMockId } = params
 
     const response = {
       ...pResponse,

@@ -1,14 +1,5 @@
 import getRequestId from './request-id'
-import { Naming, Headers } from './types'
-
-type GetMockIdParams = {
-  url: string
-  naming: Naming
-  name?: string
-  method?: string
-  body?: string
-  headers?: Headers
-}
+import { GetMockIdParams } from './types'
 
 /**
  * Returns uniq mock id.

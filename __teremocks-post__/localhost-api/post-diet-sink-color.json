@@ -24,7 +24,6 @@
     },
     "body": {
       "suggest": "green"
-    },
-    "ttfb": 109
+    }
   }
 }

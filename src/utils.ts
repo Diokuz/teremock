@@ -3,6 +3,7 @@ import debug from 'debug'
 import { Request, Response, Options, UserOptions, Interceptor, UserInterceptor } from './types'
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 import { humanize } from './words-hash'
+import defaultGetMockId from './mock-id'
 
 const loggerint = debug('teremock:utils:interceptor')
 
@@ -160,9 +161,19 @@ export function userOptionsToOptions(defaultOptions: Options, userOptions: UserO
     interceptors = { ...customInterceptors, ...defaultInterceptors, ...customInterceptors }
   }
 
+  let getMockId = defaultOptions.getMockId
+
+  if (typeof userOptions.getMockId === 'function') {
+    getMockId = (...args): string => {
+      // @ts-ignore WHY??
+      return userOptions?.getMockId?.(...args) ?? defaultGetMockId(...args)
+    }
+  }
+
   return {
     ...defaultOptions,
     ...restUO,
     interceptors,
+    getMockId,
   }
 }

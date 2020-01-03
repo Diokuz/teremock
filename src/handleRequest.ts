@@ -1,6 +1,5 @@
 import signale, { debug } from './logger'
 import { findInterceptor, parseUrl, assignResponse } from './utils'
-import getMockId from './mock-id'
 import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
@@ -30,7 +29,15 @@ type BeforeRespondArg = {
   increment: () => number
 }
 
-async function beforeRespond({ respond, request, response, mog, interceptor, increment, responseOverrides }: BeforeRespondArg) {
+async function beforeRespond({
+  respond,
+  request,
+  response,
+  mog,
+  interceptor,
+  increment,
+  responseOverrides,
+}: BeforeRespondArg) {
   let resp: Response
 
   if (typeof response === 'function') {
@@ -73,7 +80,7 @@ export default function createHandler(initialParams) {
 
   return async function handleRequest({ request, abort, next, respond }, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { interceptors, storage, reqSet, ci, responseOverrides } = params
+    const { interceptors, storage, reqSet, ci, responseOverrides, getMockId } = params
 
     const reqParams = { url: request.url, method: request.method, body: request.body }
     logger(`» intercepted request with method "${request.method}" and url "${request.url}"`)

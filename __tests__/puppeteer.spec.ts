@@ -475,6 +475,35 @@ describe('teremock', () => {
       await teremock.stop()
     })
   })
+
+  describe('options.getMockId', () => {
+    it('name as query', async () => {
+      rimraf.sync(path.resolve(__dirname, '../__teremocks__/custom-mock-id'))
+      const mockFilePath = path.resolve(__dirname, '../__teremocks__/custom-mock-id/w.json')
+      await page.goto('http://localhost:3000')
+      expect(fs.existsSync(mockFilePath)).toBe(false)
+
+      // * Starting mocker
+      console.log('getMockId')
+      await teremock.start({
+        page,
+        getMockId: ({ url }) => {
+          const urlObj = new URL(url)
+          const query = urlObj.searchParams.get('q')
+
+          return `custom-mock-id--${query}`
+        }
+      })
+
+      // * Typing `w` → invoking two request to `/api`
+      await page.click('#input')
+      await page.keyboard.type('w')
+      await sleep(200)
+      expect(fs.existsSync(mockFilePath)).toBe(true)
+
+      await teremock.stop()
+    })
+  })
 })
 
 process.on('exit', () => {

@@ -28,7 +28,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     requestBody = puppeteerRequest.postData()
   }
 
-  const timestamp = Date.now()
+  // const timestamp = Date.now()
 
   const request: Request = {
     url: puppeteerRequest.url(),
@@ -43,7 +43,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     status: puppeteerResponse.status(),
     headers: puppeteerResponse.headers(),
     body: responseBody,
-    ttfb: timestamp - puppeteerRequest.timestamp,
+    // ttfb: timestamp - puppeteerRequest.timestamp,
   }
 
   logger(`got the response, sending it to teremock core`)

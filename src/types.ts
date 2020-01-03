@@ -19,6 +19,15 @@ export type Response = {
   body?: string | Record<string, any>
 }
 
+export type GetMockIdParams = {
+  url: string
+  naming: Naming
+  name?: string
+  method?: string
+  body?: string
+  headers?: Headers
+}
+
 type ResponseFunc = (req: Request) => Promise<any>
 export type DefResponse = Partial<Response> | ResponseFunc
 
@@ -82,9 +91,10 @@ export type UserInterceptor = {
 export type Options = {
   interceptors: Record<string, Interceptor>
   ci: boolean
-  responseOverrides?: Partial<Response>
   skipResponseHeaders: string[]
   awaitConnectionsOnStop: boolean
+  getMockId: (arg: GetMockIdParams) => string
+  responseOverrides?: Partial<Response>
   wd?: string | string[]
 }
 
@@ -92,6 +102,7 @@ export type UserOptions = {
   page?: any
   wd?: string | string[]
   interceptors?: Record<string, UserInterceptor>
+  getMockId?: (arg: GetMockIdParams) => string | void
   skipResponseHeaders?: string[]
   responseOverrides?: Partial<Response>
 }

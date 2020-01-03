@@ -24,7 +24,6 @@
     },
     "body": {
       "suggest": "world"
-    },
-    "ttfb": 114
+    }
   }
 }

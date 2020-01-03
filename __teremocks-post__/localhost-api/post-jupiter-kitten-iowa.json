@@ -24,7 +24,6 @@
     },
     "body": {
       "suggest": "example"
-    },
-    "ttfb": 131
+    }
   }
 }

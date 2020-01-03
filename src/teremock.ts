@@ -86,7 +86,7 @@ class Teremock {
     })
     this.alive = true
     this.options = userOptionsToOptions(this.defaultOptions, userOptions)
-    this.options.wd && this.storage.setWd(this.options.wd)
+    this.options.wd && this.storage.setWd?.(this.options.wd)
     this.driver = this.driver ?? new PuppeteerDriver({ page: userOptions.page })
     await this.driver.setRequestInterception(true)
     this._spies = []

@@ -1,5 +1,7 @@
+import path from 'path'
 import isCi from 'is-ci'
 import { Options, Interceptor } from './types'
+import getMockId from './mock-id'
 
 export const DEFAULT_INTERCEPTOR_CAPTURE = {
   name: '__teremock_buildin_capture',
@@ -40,4 +42,7 @@ export const DEFAULT_OPTIONS: Options = {
   // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
   ci: isCi, // Same behaviour as in Jest
   awaitConnectionsOnStop: false,
+  getMockId,
+  // You need default value, or next teremock.start() (without options.wd) will use old wd value
+  wd: path.resolve(process.cwd(), '__teremocks__'),
 }
