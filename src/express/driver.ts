@@ -42,9 +42,11 @@ class ExpressDriver implements Driver {
 
         const realUrl = resolveReal(req.originalUrl, apiUrl, key)
         const getRealResponse = async (r: Request): Promise<ExtractedResponse> => {
+          // omit requester-specific data, since it can break request
+          const { host, origin, referer, ...rest } = r.headers || {}
           const opts: any = {
             method: r.method,
-            headers: r.headers,
+            headers: rest,
           }
           const gotResponse = await got(realUrl, opts)
 

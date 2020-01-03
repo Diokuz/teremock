@@ -27,6 +27,7 @@ const expressTeremock = new ExpressTeremock()
 type Opts = {
   app?: express.Application
   port?: number
+  getMockId?: (arg: any) => string
   env: Record<string, string>
 }
 
@@ -46,7 +47,7 @@ const tes = {
 
         switch (method) {
           case 'start':
-            await expressTeremock.start({ ...data, app, env })
+            await expressTeremock.start({ ...data, app, env, getMockId: opts.getMockId })
             ws.send(JSON.stringify({ message: 'started' }))
             break
           case 'add':

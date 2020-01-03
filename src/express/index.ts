@@ -21,7 +21,7 @@ class Tes {
   private startResolve: () => void
   private startPromise: Promise<void>
 
-  public async start(options: UserOptions & { wsUrl?: string }): Promise<void> {
+  public async start(options: UserOptions & { wsUrl?: string } = {}): Promise<void> {
     const { wsUrl, ...tOptions } = options
     const resultWsUrl = wsUrl ?? `ws://localhost:${DEFAULT_WS_PORT}/path/doesnt/matter`
     let reject: Function
