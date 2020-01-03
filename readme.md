@@ -106,9 +106,15 @@ const options = {
   // Default is `is-ci` package value (same as in Jest library)
   ci: false,
 
-  // Custom delay between request and response for mocked responses
-  // Default value is 0
-  ttfb: () => Math.random() * 1000
+  // Extends values for any mocked response
+  // You could redefine any response property, including headers, body and ttfb
+  responseAssign: {
+    // A sequence of ttfb values
+    // Each new request will get the next (looped) ttfb value
+    // Could be usefull when find flaky tests and race conditions
+    // In this example, all requests (first 10) will work as a stack, not as a queue
+    ttfb: [900, 800, 700, 600, 500, 400, 300, 200, 100, 0]
+  }
 }
 ```
 

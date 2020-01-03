@@ -1,5 +1,5 @@
 import signale, { debug } from './logger'
-import { findInterceptor, parseUrl } from './utils'
+import { findInterceptor, parseUrl, assignResponse } from './utils'
 import getMockId from './mock-id'
 import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
 
@@ -24,11 +24,13 @@ type BeforeRespondArg = {
   respond: (response: Response, interceptor: Interceptor) => void
   request: Request
   response: DefResponse
+  responseOverrides?: Partial<Response>
   interceptor: Interceptor
   mog: Function
+  increment: () => number
 }
 
-async function beforeRespond({ respond, request, response, mog, interceptor }: BeforeRespondArg) {
+async function beforeRespond({ respond, request, response, mog, interceptor, increment, responseOverrides }: BeforeRespondArg) {
   let resp: Response
 
   if (typeof response === 'function') {
@@ -36,12 +38,6 @@ async function beforeRespond({ respond, request, response, mog, interceptor }: B
     resp = await response(request)
     mog(`» response() returns`, resp)
   } else {
-    const ttfb = response?.ttfb ?? 0
-    const actualDelay: number = typeof ttfb === 'function' ? ttfb() : ttfb
-
-    mog('» actualDelay', actualDelay)
-    await sleep(Math.floor(actualDelay))
-
     const bodyStr = getBodyStr(response.body)
 
     mog('» responding with', bodyStr.slice(100))
@@ -49,13 +45,21 @@ async function beforeRespond({ respond, request, response, mog, interceptor }: B
     resp = { ...response, body: bodyStr }
   }
 
-  if (resp.status >= 300 && resp.status < 400) {
-    const { body, ...rest } = resp
-    // @ts-ignore
-    resp = rest
+  let resultResponse = assignResponse(resp, responseOverrides)
+
+  const ttfb = resultResponse?.ttfb ?? 0
+  const actualDelay: number = Array.isArray(ttfb) ? ttfb[increment() % ttfb.length] : ttfb
+
+  mog('» actualDelay', actualDelay)
+  await sleep(Math.floor(actualDelay))
+
+  if (resultResponse.status >= 300 && resultResponse.status < 400) {
+    const { body, ...rest } = resultResponse
+
+    resultResponse = rest
   }
 
-  respond(resp, interceptor)
+  respond(resultResponse, interceptor)
 }
 
 // Need type string here
@@ -63,11 +67,13 @@ async function beforeRespond({ respond, request, response, mog, interceptor }: B
 const getBodyStr = (body): string => typeof body === 'string' ? body : JSON.stringify(body ?? '')
 
 export default function createHandler(initialParams) {
+  let i = 0
+  const increment = () => i++
   logger('creating request handler')
 
   return async function handleRequest({ request, abort, next, respond }, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { interceptors, storage, reqSet, ci, response: globalResp } = params
+    const { interceptors, storage, reqSet, ci, responseOverrides } = params
 
     const reqParams = { url: request.url, method: request.method, body: request.body }
     logger(`» intercepted request with method "${request.method}" and url "${request.url}"`)
@@ -101,7 +107,15 @@ export default function createHandler(initialParams) {
     if (interceptor.response) {
       mog(`» interceptor.response defined, responding with it`)
 
-      await beforeRespond({ request, response: interceptor.response, respond, interceptor, mog })
+      await beforeRespond({
+        request,
+        response: interceptor.response,
+        responseOverrides,
+        respond,
+        interceptor,
+        mog,
+        increment,
+      })
 
       return
     }
@@ -118,11 +132,18 @@ export default function createHandler(initialParams) {
       mog(`» mock "${mockId}" exists!`)
 
       const mock = await storage.get(mockId)
-      const resp = { ...mock.response, ...globalResp }
 
       mog(`» successfully read from "${mockId}", responding`)
 
-      await beforeRespond({ request, response: resp, respond, interceptor, mog })
+      await beforeRespond({
+        request,
+        response: mock.response,
+        responseOverrides,
+        respond,
+        interceptor,
+        mog,
+        increment,
+      })
     } else {
       mog(`» mock does not exist!`)
 

@@ -221,7 +221,6 @@ describe('utils.userInterceptorToInterceptor', () => {
     const interceptor = userInterceptorToInterceptor(userInterceptor, 'a')
 
     expect(interceptor.response.status).toBe(200)
-    expect(typeof interceptor.response.ttfb).toBe('number')
     expect(typeof interceptor.response.url).toBe('string')
   })
 })

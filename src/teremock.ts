@@ -150,13 +150,13 @@ class Teremock {
     return this._startPromise
   }
 
-  public add(userInterceptor: UserInterceptor, overwrite = false) {
+  public add(userInterceptor: UserInterceptor, overwrite = false): () => void {
     const interceptor = userInterceptorToInterceptor(userInterceptor)
     const { name } = interceptor
 
     if (name in this._interceptors && !overwrite) {
       signale.error(`interceptor with name "${name}" already exists, pass second arg true if you want to overwrite it`)
-      return
+      return () => {}
     }
 
     this._interceptors = {

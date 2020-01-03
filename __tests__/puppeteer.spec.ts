@@ -1,16 +1,15 @@
-const fs = require('fs')
-const path = require('path')
-const { spawn } = require('child_process')
-const puppeteer = require('puppeteer')
-const waitPort = require('wait-port')
-const rimraf = require('rimraf')
-const signale = require('signale')
-const sinon = require('sinon')
-const teremock = require('../src').default
-const Teremock = require('../src').Teremock
+import fs from 'fs'
+import path from 'path'
+import { spawn } from 'child_process'
+import puppeteer from 'puppeteer'
+import waitPort from 'wait-port'
+import rimraf from 'rimraf'
+import signale from 'signale'
+import sinon from 'sinon'
+import teremock, { Teremock } from '../src'
 
 async function sleep(time) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
     setTimeout(resolve, time)
   })
 }
@@ -173,6 +172,7 @@ describe('teremock', () => {
       const storage = { set: sinon.spy(async () => ''), has: () => false }
 
       // * Creating mocker with custom storage
+      // @ts-ignore
       const teremock = new Teremock({ storage })
 
       // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
@@ -267,6 +267,7 @@ describe('teremock', () => {
       }
 
       // * Starting mocker with wildcard interceptor
+      // @ts-ignore
       const teremock = new Teremock({ storage })
       await teremock.start({ page, interceptors })
 
@@ -441,6 +442,36 @@ describe('teremock', () => {
       await sleep(150)
       const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
       expect(text2).toBe('200 custom A')
+      await teremock.stop()
+    })
+  })
+
+  describe('options.response', () => {
+    it('ttfb as array', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page, responseOverrides: { ttfb: [150, 50] } })
+      await teremock.add({ query: { q: 'x' }, response: { body: { suggest: 'x' } } })
+      await teremock.add({ query: { q: 'xy' }, response: { body: { suggest: 'xy' } } })
+
+      // * Typing `ab` → invoking two request to `/api`
+      await page.click('#input')
+      await page.keyboard.type('xy')
+
+      // * Wait for the second request (50 ms) to be done
+      await sleep(100)
+
+      // * Suggest must have text from the second request
+      const text1 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      expect(text1).toBe('200 xy')
+
+      // * Wait for the first request (150ms) to be done
+      await sleep(100)
+
+      // * After the first request is done, text must be just `q`
+      const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      expect(text2).toBe('200 x')
       await teremock.stop()
     })
   })

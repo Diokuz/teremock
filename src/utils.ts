@@ -1,10 +1,21 @@
 import { URL } from 'url'
 import debug from 'debug'
-import { Request, Options, UserOptions, Interceptor, UserInterceptor } from './types'
+import { Request, Response, Options, UserOptions, Interceptor, UserInterceptor } from './types'
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 import { humanize } from './words-hash'
 
 const loggerint = debug('teremock:utils:interceptor')
+
+export function assignResponse(response1: Response, response2?: Partial<Response>): Response {
+  return {
+    ...response1,
+    ...response2,
+    headers: {
+      ...response1.headers,
+      ...response2?.headers,
+    },
+  }
+}
 
 type InParams = {
   interceptors: Record<string, Interceptor>
@@ -116,7 +127,6 @@ export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg?: st
       response: {
         url: '<unknown>',
         status: 200,
-        ttfb: 0,
         ...uint.response,
       }
     }

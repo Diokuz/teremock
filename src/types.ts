@@ -12,7 +12,10 @@ export type Response = {
   url: string
   status: number
   headers?: Headers
-  ttfb: (() => number) | number
+  // By default, ttfb is not stored in file mocks, because
+  // 1. It makes test run longer
+  // 2. It makes impossible simultaneous use of response.ttfb and options.response.ttfb
+  ttfb?: number | number[]
   body?: string | Record<string, any>
 }
 
@@ -79,7 +82,7 @@ export type UserInterceptor = {
 export type Options = {
   interceptors: Record<string, Interceptor>
   ci: boolean
-  response?: Response
+  responseOverrides?: Partial<Response>
   skipResponseHeaders: string[]
   awaitConnectionsOnStop: boolean
   wd?: string | string[]
@@ -90,6 +93,7 @@ export type UserOptions = {
   wd?: string | string[]
   interceptors?: Record<string, UserInterceptor>
   skipResponseHeaders?: string[]
+  responseOverrides?: Partial<Response>
 }
 
 export type Meta = {
