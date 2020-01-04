@@ -47,7 +47,7 @@ async function beforeRespond({
   } else {
     const bodyStr = getBodyStr(response.body)
 
-    mog('» responding with', bodyStr.slice(100))
+    mog('» responding with', bodyStr.slice(0, 100))
     // @ts-ignore
     resp = { ...response, body: bodyStr }
   }

@@ -48,9 +48,22 @@ class ExpressDriver implements Driver {
             method: r.method,
             headers: rest,
           }
-          const gotResponse = await got(realUrl, opts)
 
-          return extractGotResponse(gotResponse)
+          if (r.body && r.method.toLowerCase() !== 'get') {
+            opts.body = typeof r.body === 'string' ? r.body : JSON.stringify(r.body)
+          }
+
+          try {
+            const gotResponse = await got(realUrl, opts)
+
+            return extractGotResponse(gotResponse)
+          } catch (e) {
+            return {
+              url: 'error',
+              status: 500,
+              body: `got error message: ${e.message}`,
+            }
+          }
         }
         const driverReq = await extractExpressRequest(req, res, realUrl, getRealResponse)
         const { request, onRespondPromise } = driverReq
@@ -99,7 +112,7 @@ class ExpressDriver implements Driver {
 
             res
               .status(sendResp.status)
-              .set(sendResp.headers)
+              // .set(sendResp.headers) // @todo, break browser because of "gzip encoding"
               .send(sendResp.body)
           } catch (e) {
             logger.error(e.message)
