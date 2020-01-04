@@ -60,7 +60,7 @@ const tes = {
             break
           case 'stop':
             await expressTeremock.stop(data)
-            ws.send(JSON.stringify({ message: 'stopped' }))
+            // ws.send(JSON.stringify({ message: 'stopped' }))
             break
         }
       })

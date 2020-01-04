@@ -43,7 +43,7 @@ class ExpressDriver implements Driver {
       logger.info(`add proxy "/${key}" → "${apiUrl}"`)
 
       this.app.use('/' + key, async (req, res) => {
-        logger.info(`enter /${key} router with url "${req.originalUrl}"`, key)
+        logger.debug(`enter /${key} router with url "${req.originalUrl}"`, key)
 
         const realUrl = resolveReal(req.originalUrl, apiUrl, key)
         const getRealResponse = async (r: Request): Promise<ExtractedResponse> => {

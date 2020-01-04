@@ -60,6 +60,7 @@ class Tes {
   }
 
   public async stop() {
+    // @todo stopPromise, and other promises too. Need some approach here.
     await this.startPromise
     this.socket.send(JSON.stringify({ method: 'stop' }))
     this.socket.close()
