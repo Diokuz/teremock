@@ -112,7 +112,7 @@ class ExpressDriver implements Driver {
 
             res
               .status(sendResp.status)
-              // .set(sendResp.headers) // @todo, break browser because of "gzip encoding"
+              .set(sendResp.headers)
               .send(sendResp.body)
           } catch (e) {
             logger.error(e.message)

@@ -108,7 +108,7 @@ const options = {
 
   // Extends values for any mocked response
   // You could redefine any response property, including headers, body and ttfb
-  responseAssign: {
+  responseOverrides: {
     // A sequence of ttfb values
     // Each new request will get the next (looped) ttfb value
     // Could be usefull when find flaky tests and race conditions

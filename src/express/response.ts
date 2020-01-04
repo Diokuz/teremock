@@ -16,6 +16,8 @@ export type ExtractedResponse = {
   body: string
 }
 
+const ALLOWED_HEADERS = new Set(['content-type'])
+
 export function extractGotResponse(gotResponse: GotResponse): ExtractedResponse {
   let requestBody = gotResponse.body
 
@@ -25,9 +27,9 @@ export function extractGotResponse(gotResponse: GotResponse): ExtractedResponse 
     // pass
   }
 
-  const omitUndefinedHeaders: Record<string, string | string[]> = Object.keys(gotResponse.headers || {}).reduce(
+  const filteredHeaders: Record<string, string | string[]> = Object.keys(gotResponse.headers || {}).reduce(
     (acc, key) => {
-      if (typeof gotResponse.headers?.[key] !== 'undefined') {
+      if (typeof gotResponse.headers?.[key] !== 'undefined' && ALLOWED_HEADERS.has(key.toLowerCase())) {
         acc[key] = gotResponse.headers[key]
       }
 
@@ -38,7 +40,7 @@ export function extractGotResponse(gotResponse: GotResponse): ExtractedResponse 
 
   return {
     url: gotResponse.url,
-    headers: omitUndefinedHeaders,
+    headers: filteredHeaders,
     status: gotResponse.statusCode,
     body: requestBody,
   }
