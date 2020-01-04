@@ -30,7 +30,12 @@ class ExpressDriver implements Driver {
     this.isActive = true
 
     // `/tinkoffApi/nearest_region?...` → `${env.tinkoffApi}/nearest_region?...`
-    const resolveReal = (originalUrl, api, key) => api + originalUrl.replace(new RegExp(`/${key}`), '')
+    const resolveReal = (originalUrl, api, key) => {
+      const url = api + originalUrl.replace(new RegExp(`/${key}`), '')
+
+      // It could happen `//` – replace it with `/`
+      return url.replace(/([^:])[/]+/g, '$1/')
+    }
 
     for (let key in this.env) {
       const apiUrl = this.env[key]
