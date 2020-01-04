@@ -10,7 +10,7 @@ import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
 import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor, SpyTuple, Spy } from './types'
 import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
-import PuppeteerDriver from './puppeteer'
+import PuppeteerDriver from './p-driver'
 import { DEFAULT_OPTIONS } from './consts'
 
 const logger = debug('teremock')
