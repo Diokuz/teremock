@@ -37,6 +37,8 @@ await teremock.start()
 
 ## How it works
 
+<img src='./assets/excalidraw.png' />
+
 First, `teremock` intercept request (all xhr/fetch requests by default). Then, it looks for the mock file. If mock file exist, you get response from it. If not, request goes to the real backend.
 
 Second, `teremock` intercepts all responds, and writes them to the **filesystem** as mock files,
