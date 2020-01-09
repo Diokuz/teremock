@@ -29,12 +29,14 @@ type Opts = {
   port?: number
   getMockId?: (arg: any) => string
   env: Record<string, string>
+  wd?: string
 }
 
 const tes = {
   listen(opts: Opts = { env: {} }) {
     const app = opts.app ?? express()
     const env = opts.env
+    const wd = opts.wd
     const port = opts.port ?? DEFAULT_WS_PORT
     const server = http.createServer(app)
     const wss = new WebSocket.Server({ server })
@@ -47,7 +49,7 @@ const tes = {
 
         switch (method) {
           case 'start':
-            await expressTeremock.start({ ...data, app, env, getMockId: opts.getMockId })
+            await expressTeremock.start({ wd, ...data, app, env, getMockId: opts.getMockId })
             ws.send(JSON.stringify({ message: 'started' }))
             break
           case 'add':
