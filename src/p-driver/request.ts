@@ -22,10 +22,12 @@ export async function extractPuppeteerRequest(puppeteerRequest): Promise<DriverR
     request,
     abort: (...args) => puppeteerRequest.abort(...args),
     next: (interceptor: Interceptor) => {
+      logger(`continue() call`)
       puppeteerRequest.__meta.interceptor = interceptor
       puppeteerRequest.continue()
     },
     respond: (response: Response, interceptor: Interceptor) => {
+      logger(`respond() call`)
       puppeteerRequest.__meta.interceptor = interceptor
       puppeteerRequest.respond(response)
     },

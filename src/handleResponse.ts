@@ -38,9 +38,18 @@ export default function createHandler(initialParams) {
       return
     }
 
-    const bodyStr: string = typeof request.body === 'string' ? request.body : JSON.stringify(request.body)
+    let bodyStrOrUnd: string | undefined
+
+    if (typeof request.body === 'string') {
+      bodyStrOrUnd = request.body
+    } else if (typeof request.body === 'undefined') {
+      bodyStrOrUnd = request.body
+    } else {
+      bodyStrOrUnd = JSON.stringify(request.body)
+    }
+
     const naming = interceptor.naming ?? {}
-    const mockId = getMockId({ ...request, naming, name: interceptor.name, body: bodyStr })
+    const mockId = getMockId({ ...request, naming, name: interceptor.name, body: bodyStrOrUnd })
     const mockExist: boolean = await storage.has(mockId)
     const hasResp = !!interceptor.response
     const isPassable = interceptor.pass
