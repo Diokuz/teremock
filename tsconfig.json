@@ -2,7 +2,7 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "target": "es5",
+    "target": "ES2018",
     "lib": ["es2015", "es2016", "dom"],
     "outDir": "./dist",
     "moduleResolution": "node",

@@ -152,7 +152,7 @@ export default function createHandler(initialParams) {
         increment,
       })
     } else {
-      mog(`» mock does not exist!`)
+      mog(`» mock does not exist!`, ci)
 
       if (ci) {
         signale.warn(`mock file not found in ci mode, url is "${request.url}"`)
