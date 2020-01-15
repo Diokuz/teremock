@@ -1,5 +1,5 @@
 import { debug } from './logger'
-import { blacklist } from './utils'
+import { blacklist, getBody } from './utils'
 import { Options, Storage, Request, Response, Meta } from './types'
 
 const logger = debug('teremock:response')
@@ -38,18 +38,8 @@ export default function createHandler(initialParams) {
       return
     }
 
-    let bodyStrOrUnd: string | undefined
-
-    if (typeof request.body === 'string') {
-      bodyStrOrUnd = request.body
-    } else if (typeof request.body === 'undefined') {
-      bodyStrOrUnd = request.body
-    } else {
-      bodyStrOrUnd = JSON.stringify(request.body)
-    }
-
     const naming = interceptor.naming ?? {}
-    const mockId = getMockId({ ...request, naming, name: interceptor.name, body: bodyStrOrUnd })
+    const mockId = getMockId({ ...request, naming, name: interceptor.name, body: getBody(request.body) })
     const mockExist: boolean = await storage.has(mockId)
     const hasResp = !!interceptor.response
     const isPassable = interceptor.pass

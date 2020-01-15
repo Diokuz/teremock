@@ -1,5 +1,5 @@
 import signale, { debug } from './logger'
-import { findInterceptor, parseUrl, assignResponse } from './utils'
+import { findInterceptor, parseUrl, assignResponse, getBody } from './utils'
 import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
@@ -45,11 +45,11 @@ async function beforeRespond({
     resp = await response(request)
     mog(`» response() returns`, resp)
   } else {
-    const bodyStr = getBodyStr(response.body)
+    const bodyStrOrUnd = getBody(response.body)
 
-    mog('» responding with', bodyStr.slice(0, 100))
+    mog('» responding with', (bodyStrOrUnd ?? '').slice(0, 100))
     // @ts-ignore
-    resp = { ...response, body: bodyStr }
+    resp = { ...response, body: bodyStrOrUnd }
   }
 
   let resultResponse = assignResponse(resp, responseOverrides)
@@ -68,10 +68,6 @@ async function beforeRespond({
 
   respond(resultResponse, interceptor)
 }
-
-// Need type string here
-// https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestrespondresponse
-const getBodyStr = (body): string => typeof body === 'string' ? body : JSON.stringify(body ?? '')
 
 export default function createHandler(initialParams) {
   let i = 0
@@ -99,8 +95,7 @@ export default function createHandler(initialParams) {
       return
     }
 
-    const bodyStr = getBodyStr(request.body)
-    const mockId = getMockId({ ...request, naming: interceptor.naming, name: interceptor.name, body: bodyStr })
+    const mockId = getMockId({ ...request, naming: interceptor.naming, name: interceptor.name, body: getBody(request.body) })
     const mog = debug(`teremock:${mockId}`)
 
     mog(`interceptor found`, interceptor)
