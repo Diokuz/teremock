@@ -1,5 +1,6 @@
 import debug from 'debug'
 import { Request, Response, DriverResponse } from '../types'
+import signale from '../logger'
 
 const logger = debug('teremock:puppeteer:response')
 
@@ -47,6 +48,11 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
   }
 
   logger(`got the response, sending it to teremock core`)
+
+  if (!puppeteerRequest.__meta) {
+    signale.warn(`__meta was not found in puppeteerRequest. Probably it was made before teremock.start()`)
+    signale.warn(`Passing the response witout storing it. The request was:`, request)
+  }
 
   return { request, response, __meta: puppeteerRequest.__meta }
 }

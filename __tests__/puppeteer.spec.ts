@@ -196,6 +196,28 @@ describe('teremock', () => {
       expect(firstMockId).toBe(secondMockId)
       await teremock.stop()
     })
+
+    it('teremock.start() after request was made (no __meta in response)', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * invoking GET request to `/api` with 100 ms ttfb
+      await page.click('#button')
+
+      // * starting mocker _after_ request was made (but not finished)
+      await teremock.start({ page })
+
+      // * check old text in the button (before response)
+      const text1 = await page.evaluate(element => element.textContent, await page.$('#button'))
+      expect(text1).toBe('Click to start')
+
+      // * await for response
+      await sleep(150)
+
+      // * check the result of response – it must not be blocked
+      const text2 = await page.evaluate(element => element.textContent, await page.$('#button'))
+      expect(text2).toBe('200 click')
+      await teremock.stop()
+    })
   })
 
   describe.skip('teremock.set()', () => {

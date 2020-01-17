@@ -13,7 +13,7 @@ type Params = Options & {
 type Arg = {
   request: Request
   response: Response
-  __meta: Meta
+  __meta?: Meta
 }
 
 export default function createHandler(initialParams) {
@@ -30,7 +30,7 @@ export default function createHandler(initialParams) {
 
     logger(`» intercepted response with method "${request.method}" and url "${request.url}"`)
 
-    const interceptor = __meta.interceptor
+    const interceptor = __meta?.interceptor
 
     if (!interceptor) {
       logger(`» interceptor not provided in response object, return`)

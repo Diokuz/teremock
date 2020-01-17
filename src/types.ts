@@ -122,7 +122,7 @@ export type DriverRequest = {
 export type DriverResponse = {
   request: Request
   response: Response
-  __meta: Meta
+  __meta?: Meta // Could be abscent in case when request was made before teremock.start()
 }
 
 export type OnRequestHandler = (arg: DriverRequest) => void
