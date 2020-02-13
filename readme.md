@@ -179,9 +179,11 @@ If `true`, pass request to the real backend. It is not recommended to pass any r
 
 Default value: `false`.
 
-#### interceptor.`response` [Object]
+#### interceptor.`response` [Object | Function]
 
 If present, it is used instead of file-based mocks. Usefull for testing different responses for the same request, and/or for mocking big-sized data.
+
+Functional interceptor response must be async (return Promise), which must resolve with full response object (e.g. `{ headers: {}, status: 200, body: ... }`). Use functional interceptors when you need dynamic behaviour (e.g. translate random cookie to random GET param). Dont use functional interceptors for handling too many different requests or as a router between mocks.
 
 Default value: `null`.
 

@@ -123,7 +123,7 @@ export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg?: st
 
   let resp = {}
 
-  if ('response' in uint) {
+  if ('response' in uint && typeof uint.response !== 'function') {
     resp = {
       response: {
         url: '<unknown>',

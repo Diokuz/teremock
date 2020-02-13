@@ -329,6 +329,35 @@ describe('teremock', () => {
       expect(storage.has.called).toBe(false)
       await teremock.stop()
     })
+
+    it('functional interceptor', async () => {
+      await page.goto('http://localhost:3000')
+
+      const interceptors = {
+        functional: {
+          url: '/api',
+          response: async (request) => {
+            return {
+              body: { suggest: `${request.query.q}-${request.query.q}-${request.query.q}` }
+            }
+          }
+        }
+      }
+
+      // * Starting mocker with wildcard interceptor
+      const teremock = new Teremock()
+      await teremock.start({ page, interceptors })
+
+      // * Typing `a` → invoking GET request to `/api`, which is mocked with inline mock
+      await page.click('#input')
+      await page.keyboard.type('i')
+      await sleep(35)
+
+      const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+
+      expect(text).toBe('200 i-i-i')
+      await teremock.stop()
+    })
   })
 
   describe('teremock.spy', () => {

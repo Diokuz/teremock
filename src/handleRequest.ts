@@ -1,5 +1,5 @@
 import signale, { debug } from './logger'
-import { findInterceptor, parseUrl, assignResponse, getBody } from './utils'
+import { findInterceptor, parseUrl, assignResponse, getBody, getQuery } from './utils'
 import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
@@ -38,19 +38,25 @@ async function beforeRespond({
   increment,
   responseOverrides,
 }: BeforeRespondArg) {
-  let resp: Response
+  let partResp: Partial<Response>
 
   if (typeof response === 'function') {
+    const argRequest = {
+      ...request,
+      query: getQuery(request.url),
+    }
     mog(`» response is a function, responding with its returns`)
-    resp = await response(request)
-    mog(`» response() returns`, resp)
+    partResp = await response(argRequest)
+    mog(`» response() returns`, partResp)
   } else {
-    const bodyStrOrUnd = getBody(response.body)
-
-    mog('» responding with', (bodyStrOrUnd ?? '').slice(0, 100))
-    // @ts-ignore
-    resp = { ...response, body: bodyStrOrUnd }
+    partResp = response
   }
+
+  const bodyStrOrUnd = getBody(partResp.body)
+
+  mog('» responding with', (bodyStrOrUnd ?? '').slice(0, 100))
+  // @ts-ignore
+  const resp: Response = { ...partResp, body: bodyStrOrUnd }
 
   let resultResponse = assignResponse(resp, responseOverrides)
 

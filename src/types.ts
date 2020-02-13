@@ -8,6 +8,8 @@ export type Request = {
   resourceType: string
 }
 
+export type ArgRequest = Request & { query: Record<string, string> }
+
 export type Response = {
   url: string
   status: number
@@ -28,7 +30,7 @@ export type GetMockIdParams = {
   headers?: Headers
 }
 
-type ResponseFunc = (req: Request) => Promise<any>
+type ResponseFunc = (req: ArgRequest) => Promise<any>
 export type DefResponse = Partial<Response> | ResponseFunc
 
 type ListItem = string | string[]
