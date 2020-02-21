@@ -290,3 +290,11 @@ await stuff()
 expect(spy.calledOnce).toBe(true)
 spy.dismiss()
 ```
+
+## Debug
+
+`teremock` uses `debug` library for hidden logs, and `signale` library for warning and error logs.
+
+Warnings and errors are printed unconditionally (all the time).
+
+Debug logs are hidden, but could be switched on with enviroment variable `DEBUG` with valies, started with `teremock...`. For example: `DEBUG=teremock* yarn jest`.

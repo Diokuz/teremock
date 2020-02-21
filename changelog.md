@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Fix bug when spies wehe not working with inline mocks
+
 ## 1.0.0
 
 - Add docs about functional interceptors

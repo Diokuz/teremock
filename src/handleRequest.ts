@@ -112,6 +112,10 @@ export default function createHandler(initialParams) {
       return
     }
 
+    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body })
+    reqSet.add(mockId)
+    mog('» reqSet is', Array.from(reqSet))
+
     if (interceptor.response) {
       mog(`» interceptor.response defined, responding with it`)
 
@@ -129,10 +133,6 @@ export default function createHandler(initialParams) {
     }
 
     // mocks from storage
-
-    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body })
-    reqSet.add(mockId)
-    mog('» reqSet is', Array.from(reqSet))
 
     mog(`» trying to get mock with id "${mockId}"`)
 

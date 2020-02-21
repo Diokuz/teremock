@@ -388,6 +388,33 @@ describe('teremock', () => {
       expect(text).toBe('200 world')
       await teremock.stop()
     })
+
+    it('teremock.spy inline mock', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page })
+
+      // * Create inline mock
+      teremock.add({
+        url: 'http://localhost:3000/api',
+        response: { body: { suggest: 'teremock.add suggest' } }
+      })
+
+      // * Creating a spy
+      const spy = teremock.spy({
+        url: 'http://localhost:3000/api',
+      })
+
+      // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
+      await page.click('#button')
+      await sleep(50)
+
+      expect(spy.called).toBe(true)
+      expect(spy.calledOnce).toBe(true)
+
+      await teremock.stop()
+    })
   })
 
   describe('teremock.add', () => {
