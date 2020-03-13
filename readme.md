@@ -85,6 +85,11 @@ const options = {
     },
     my_another_api: {
       url: '/path/to/my/api',
+      response: async (request) => ({
+        status: 200,
+        headers: {},
+        body: request.query
+      })
     },
     option_requests: {
       methods: 'option',
@@ -94,10 +99,6 @@ const options = {
         }
       }
     },
-    // it is recommended to have that interceptor
-    all_other_requests: {
-      middleware: () => ({ status: 500, body: 'request is not allowed!' })
-    }
   },
 
   // Absolute path to working directory, where you want to store mocks

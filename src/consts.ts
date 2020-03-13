@@ -46,3 +46,7 @@ export const DEFAULT_OPTIONS: Options = {
   // You need default value, or next teremock.start() (without options.wd) will use old wd value
   wd: path.resolve(process.cwd(), '__teremocks__'),
 }
+
+export const DEFAULT_RESP_HEADERS = {
+  'Content-Type': 'application/json; charset=utf-8'
+}

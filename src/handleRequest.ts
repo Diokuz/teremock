@@ -1,6 +1,7 @@
 import signale, { debug } from './logger'
 import { findInterceptor, parseUrl, assignResponse, getBody, getQuery } from './utils'
 import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
+import { DEFAULT_RESP_HEADERS } from './consts'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
@@ -56,7 +57,14 @@ async function beforeRespond({
 
   mog('» responding with', (bodyStrOrUnd ?? '').slice(0, 100))
   // @ts-ignore
-  const resp: Response = { ...partResp, body: bodyStrOrUnd }
+  const resp: Response = {
+    ...partResp,
+    headers: {
+      ...DEFAULT_RESP_HEADERS,
+      ...partResp.headers,
+    },
+    body: bodyStrOrUnd,
+  }
 
   let resultResponse = assignResponse(resp, responseOverrides)
 

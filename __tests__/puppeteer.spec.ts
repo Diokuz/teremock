@@ -70,6 +70,32 @@ describe('teremock', () => {
       expect(fs.existsSync(mockFilePath)).toBe(true)
     })
 
+    it('generates mocks to utf-8', async () => {
+      const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-bark-seven-emma.json')
+
+      rimraf.sync(mockFilePath)
+
+      // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
+      await teremock.start({ page })
+      await page.goto('http://localhost:3000')
+
+      expect(fs.existsSync(mockFilePath)).toBe(false)
+
+      // * Typing `фt` → invoking request to `/api`
+      // (page.keyboard.type does not invokes keyup handler for cyrillic letters for reasons unknown)
+      await page.click('#input')
+      await page.keyboard.type('фt')
+
+      // * wait for all connections to complete
+      await teremock.connections()
+      // @todo fix connections and write tests already!
+      await sleep(500)
+
+      // * At that point there must be mock files
+      expect(fs.existsSync(mockFilePath)).toBe(true)
+      expect(JSON.parse(fs.readFileSync(mockFilePath, { encoding: 'utf-8' })).response.body.suggest).toBe('фt')
+    })
+
     it('generates mocks for POST request', async () => {
       const mockFilePath = path.resolve(__dirname, '../__teremocks-post__/localhost-api/post-jupiter-kitten-iowa.json')
 
@@ -217,64 +243,6 @@ describe('teremock', () => {
       const text2 = await page.evaluate(element => element.textContent, await page.$('#button'))
       expect(text2).toBe('200 click')
       await teremock.stop()
-    })
-  })
-
-  describe.skip('teremock.set()', () => {
-    it('Generates mocks in the custom working directory', async () => {
-      const mockFilePath = path.resolve(__dirname, '../__extra-mocks__/localhost-api/get-app-diet-moon.json')
-      await teremock.stop()
-      await page.goto('http://localhost:3000')
-
-      // * Starting mocker
-      await teremock.start({ page })
-      // @ts-ignore
-      await teremock.set('wd', path.resolve(process.cwd(), '__extra-mocks__'))
-
-      expect(fs.existsSync(mockFilePath)).toBe(false)
-
-      // * Typing `abcd` → invoking request to `/api`
-      await page.click('#input')
-      await page.keyboard.type('abcd', { delay: 100 })
-
-      // * teremock.stop waits for all connections
-      await teremock.connections()
-      await sleep(1000)
-
-      // * At that point there must be mock files
-      expect(fs.existsSync(mockFilePath)).toBe(true)
-    })
-
-    it('Changes request.status', async () => {
-      await teremock.stop()
-      await page.goto('http://localhost:3000')
-
-      // * Starting mocker
-      await teremock.start({ page })
-
-      // * Typing `a` → invoking request to `/api`
-      await page.click('#input')
-      await page.keyboard.type('a')
-
-      // * Awaiting for suggest innerText with code 200
-      await page.waitForFunction(() => {
-        // @ts-ignore
-        return document.querySelector('#suggest').innerText === '200 example'
-      }, { timeout: 700 })
-
-      // @ts-ignore
-      await teremock.set('response', { status: 429 })
-      await page.keyboard.type('b')
-
-      // * Awaiting for suggest innerText with code 429
-      await page.waitForFunction(() => {
-        // @ts-ignore
-        return document.querySelector('#suggest').innerText === '429 world'
-      }, { timeout: 700 })
-    })
-
-    afterAll(() => {
-      rimraf.sync(path.resolve(__dirname, '../__extra-mocks__'))
     })
   })
 
@@ -436,6 +404,27 @@ describe('teremock', () => {
 
       const text = await page.evaluate(element => element.textContent, await page.$('#button'))
       expect(text).toBe('200 teremock.add suggest')
+      await teremock.stop()
+    })
+
+    it('utf-8 charset', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page })
+
+      // * Create inline mock with cyrillic letters
+      teremock.add({
+        url: 'http://localhost:3000/api',
+        response: { body: { suggest: 'Строчка на русском языке' } }
+      })
+
+      // * Invoking GET request to `/api`
+      await page.click('#button')
+      await sleep(50)
+
+      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      expect(text).toBe('200 Строчка на русском языке')
       await teremock.stop()
     })
 
