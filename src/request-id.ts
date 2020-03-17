@@ -1,11 +1,12 @@
 // @ts-ignore
 import { createHash } from 'crypto'
+import { get, assoc } from 'sprout-data'
 // @ts-ignore
 import { URL } from 'url'
 // @ts-ignore
 import queryString from 'query-string'
 import { humanize } from './words-hash'
-import { Naming, Headers } from './types'
+import { Naming, Headers, List } from './types'
 
 // Length of query string after which three-words-naming is switching on
 const MAX_QUERY_NAME_LENGTH = 25
@@ -16,6 +17,26 @@ type Params = {
   headers?: Headers
   body?: string
   naming: Naming
+}
+
+function pickDeep(obj, keys: List) {
+  return keys.reduce((acc, key) => {
+    let val
+
+    if (Array.isArray(key)) {
+      val = get(obj, key)
+
+      if (typeof val !== 'undefined') {
+        assoc(acc, key, val)
+      }
+    } else {
+      val = get(obj, [key])
+
+      assoc(acc, [key], val)
+    }
+
+    return acc
+  }, {})
 }
 
 /**
@@ -40,8 +61,9 @@ const getRequestId = (params: Params) => {
   let headers = params.headers
   let body = params.body || ''
   let queryWhitelist = params.naming.query?.whitelist || []
-  let bodyBlacklist = params.naming.body?.blacklist || []
   let queryBlacklist = params.naming.query?.blacklist || []
+  let bodyWhitelist: List = params.naming.body?.whitelist || []
+  let bodyBlacklist = params.naming.body?.blacklist || []
 
   const urlObj = new URL(url)
   let bodyObj
@@ -61,6 +83,10 @@ const getRequestId = (params: Params) => {
   }
 
   if (bodyObj) {
+    if (bodyWhitelist.length) {
+      bodyObj = pickDeep(bodyObj, bodyWhitelist)
+    }
+
     bodyBlacklist.forEach((param: string | string[]) => {
       let currentObj = bodyObj
       let paramForDelete = param

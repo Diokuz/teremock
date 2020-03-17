@@ -59,7 +59,7 @@ it('params outside of query.whitelist does not affect output name', () => {
   expect(name1).toBe(name2)
 })
 
-it('params out of the whitelist does not affect output name', () => {
+it('params out of the query.whitelist does not affect output name', () => {
   const naming = { query: { whitelist: ['foo'] } }
   const name1 = getRequestId({ url: 'http://example.com?foo=bar&x=y&y=x', naming })
   const name2 = getRequestId({ url: 'http://example.com?foo=bar', naming })
@@ -67,7 +67,7 @@ it('params out of the whitelist does not affect output name', () => {
   expect(name1).toBe(name2)
 })
 
-it('whitelist with two params', () => {
+it('query.whitelist with two params', () => {
   const naming = { query: { whitelist: ['foo', 'trois'] } }
   const name1 = getRequestId({ url: 'http://example.com?foo=bar&trois=quatre&x=y', naming })
   const name2 = getRequestId({ url: 'http://example.com?trois=quatre&foo=bar', naming })
@@ -81,6 +81,16 @@ it('query.blacklist and whitelist at the same time', () => {
   const name2 = getRequestId({ url: 'http://example.com?trois=quatre&foo=bar', naming })
 
   expect(name1).toBe(name2)
+})
+
+it('body with content-type="application/json" affects the output name', () => {
+  const headers = { 'content-type': 'application/json' }
+  const method = 'POST'
+  const url = 'http://example.com'
+  const name1 = getRequestId({ url, method, headers, naming: {}, body: JSON.stringify({ foo: 'bar' }) })
+  const name2 = getRequestId({ url, method, headers, naming: {}, body: JSON.stringify({ foo: 'baz' }) })
+
+  expect(name1).not.toBe(name2)
 })
 
 it('params from body.blacklist for request with content-type="application/json" does not affects output name', () => {
@@ -105,7 +115,29 @@ it('params from body.blacklist for request with content-type="application/json" 
   expect(name1).toBe(name2)
 })
 
-it('Skipped post body params for request with content-type="application/x-www-form-urlencoded" does not affects output name', () => {
+it('params out of the body.whitelist with content-type="application/json" does not affect output name', () => {
+  const naming = { body: { whitelist: ['foo'] } }
+  const headers = { 'content-type': 'application/json' }
+  const method = 'POST'
+  const url = 'http://example.com'
+  const name1 = getRequestId({ url, method, headers, naming, body: JSON.stringify({ foo: 'bar' }) })
+  const name2 = getRequestId({ url, method, headers, naming, body: JSON.stringify({ foo: 'bar', baz: 'qwe' }) })
+
+  expect(name1).toBe(name2)
+})
+
+it('nested params out of the body.whitelist with content-type="application/json" does not affect output name', () => {
+  const naming = { body: { whitelist: ['foo', ['x', 'y']] } }
+  const headers = { 'content-type': 'application/json' }
+  const method = 'POST'
+  const url = 'http://example.com'
+  const name1 = getRequestId({ url, method, headers, naming, body: JSON.stringify({ q: 'q', x: { y: 1, z: 2 } }) })
+  const name2 = getRequestId({ url, method, headers, naming, body: JSON.stringify({ q: 'w', x: { y: 1, z: 3 } }) })
+
+  expect(name1).toBe(name2)
+})
+
+it('body.blacklist params for request with content-type="application/x-www-form-urlencoded" does not affects output name', () => {
   const naming = { body: { blacklist: ['foo'] } }
   const headers = { 'content-type': 'application/x-www-form-urlencoded' }
 
@@ -127,7 +159,18 @@ it('Skipped post body params for request with content-type="application/x-www-fo
   expect(name1).toBe(name2)
 })
 
-it('Skipped post body params for request without content-type affects output name', () => {
+it('params out of the body.whitelist with content-type="application/x-www-form-urlencoded" does not affect output name', () => {
+  const naming = { body: { whitelist: ['foo'] } }
+  const headers = { 'content-type': 'application/x-www-form-urlencoded' }
+  const method = 'POST'
+  const url = 'http://example.com'
+  const name1 = getRequestId({ url, method, headers, naming, body: 'foo=bar&x=2' })
+  const name2 = getRequestId({ url, method, headers, naming, body: 'foo=bar&x=3' })
+
+  expect(name1).toBe(name2)
+})
+
+it('body.blacklist params for request without content-type affects output name', () => {
   const method = 'POST'
   const naming = { body: { blacklist: ['foo'] } }
   const headers = {}

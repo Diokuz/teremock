@@ -35,7 +35,7 @@ export type DefResponse = Partial<Response> | ResponseFunc
 
 type ListItem = string | string[]
 
-type List = ListItem[]
+export type List = ListItem[]
 
 // @todo generic, do I really need it?
 export interface Storage {

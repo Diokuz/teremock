@@ -1,6 +1,6 @@
 {
   "name": "teremock",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Easy to use test request mocker for puppeteer / mocha / karma",
   "main": "dist",
   "repository": {
@@ -28,6 +28,7 @@
     "make-dir": "^3.0.0",
     "query-string": "^6.8.3",
     "signale": "^1.4.0",
+    "sprout-data": "^1.2.2",
     "tslib": "^1.10.0"
   },
   "devDependencies": {

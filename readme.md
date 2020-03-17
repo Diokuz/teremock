@@ -140,7 +140,7 @@ A string, which defines urls to match. It works when `request.url.includes(url) 
 
 Default value: `*`.
 
-#### interceptor.`resouceTypes` [string]
+#### interceptor.`resourceTypes` [string]
 
 Comma-separated list of puppeteer [request resource types](https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestresourcetype). By default, only `xhr` and `fetch` request are mockable, but there are many situation where you may want to mock html documents, js files and, for example, the whole page of the facebook auth.
 
@@ -190,7 +190,7 @@ Default value: `null`.
 
 #### interceptor.`naming` [Object]
 
-See [Change naming rules](#change naming rules) below.
+See [Change naming rules](https://github.com/Diokuz/teremock#change-naming-rules) below.
 
 [Interceptor examples](./examples/interceptors.js).
 
