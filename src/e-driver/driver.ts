@@ -55,7 +55,19 @@ class ExpressDriver implements Driver {
           }
 
           if (r.body && r.method.toLowerCase() !== 'get') {
-            opts.body = typeof r.body === 'string' ? r.body : JSON.stringify(r.body)
+            switch (r.headers?.['content-type']) {
+              case 'application/x-www-form-urlencoded':
+                // we already converted r.body from string to obj in the express body parser middleware
+                // so, we need to convert it back to string
+                opts.body = new URLSearchParams(r.body).toString()
+                break
+              default:
+                opts.body = typeof r.body === 'string' ? r.body : JSON.stringify(r.body)
+            }
+
+            if (r.headers?.['content-length']) {
+              opts.headers['content-length'] = opts.body.length
+            }
           }
 
           try {
