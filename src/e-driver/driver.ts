@@ -66,7 +66,7 @@ class ExpressDriver implements Driver {
             }
 
             if (r.headers?.['content-length']) {
-              opts.headers['content-length'] = opts.body.length
+              opts.headers['content-length'] = Buffer.byteLength(opts.body, 'utf-8')
             }
           }
 

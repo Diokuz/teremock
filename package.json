@@ -1,6 +1,6 @@
 {
   "name": "teremock",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Easy to use test request mocker for puppeteer / mocha / karma",
   "main": "dist",
   "repository": {
