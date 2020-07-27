@@ -1,4 +1,4 @@
-import teremock from '../../dist/express'
+import teremock from '../../express'
 
 async function run() {
   await teremock.start({
@@ -9,21 +9,29 @@ async function run() {
   const remove = await teremock.add({
     query: { q: 'ab' },
     response: {
-      body: { suggest: 'Congrat!!! This is inline (not a file) mock for q=ab' }
-    }
+      body: { suggest: 'Congrat!!! This is inline (not a file) mock for q=ab' },
+    },
   })
 
   const suggest = document.querySelector('#suggest')
   document.querySelector('#input').addEventListener('keyup', (e) => {
     const query = e.target.value
 
-    fetch(`/api?q=${query}`)
-      .then(async (re) => {
-        const j = await re.json()
-        const { status } = re
+    fetch(`/api?q=${query}`).then(async (re) => {
+      const j = await re.json()
+      const { status } = re
 
-        suggest.innerText = `${status} ${j.suggest}`
-      })
+      suggest.innerText = `${status} ${j.suggest}`
+    })
+  })
+
+  document.querySelector('#notfound').addEventListener('click', () => {
+    fetch(`/notfound`).then(async (re) => {
+      const j = await re.json()
+      const { status } = re
+
+      suggest.innerText = `${status} ${j.suggest}`
+    })
   })
 
   setTimeout(() => {

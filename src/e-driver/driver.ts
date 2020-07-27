@@ -52,6 +52,7 @@ class ExpressDriver implements Driver {
           const opts: any = {
             method: r.method,
             headers: rest,
+            throwHttpErrors: false,
           }
 
           if (r.body && r.method.toLowerCase() !== 'get') {
