@@ -31,6 +31,9 @@
       input:focus {
         outline: none;
       }
+      .button {
+        margin: auto;
+      }
     </style>
 
 <title>Teremock // Express driver example</title>
@@ -41,6 +44,7 @@
       <div class='suggest'>Type 'abc' → get mocked custom response</div>
       <div class='suggest'>Type any other → get real responses and new mock files</div>
       <input type='text' id='input' autofocus placeholder="GET" />
+      <button class="button" id="notfound">Click to request api with 404 status code</button>
       <div class='suggest' id="suggest">&nbsp;</div>
     </div>
 
