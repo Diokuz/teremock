@@ -16,7 +16,7 @@ export async function extractPuppeteerRequest(puppeteerRequest): Promise<DriverR
   puppeteerRequest.teremockRequest = request
   puppeteerRequest.__meta = { request }
 
-  logger(`got the request, sending it to teremock core`)
+  logger(`got the request ${request.url}, sending it to teremock core`)
 
   return {
     request,

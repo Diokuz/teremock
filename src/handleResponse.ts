@@ -42,18 +42,22 @@ export default function createHandler(initialParams) {
     const mockId = getMockId({ ...request, naming, name: interceptor.name, body: getBody(request.body) })
     const mockExist: boolean = await storage.has(mockId)
     const hasResp = !!interceptor.response
-    const isPassable = interceptor.pass
     const mog = debug(`teremock:${mockId}`)
 
     /**
      * @todo update mock in non-ci mode
      */
-    if (!ci && !mockExist && !hasResp && !isPassable) {
+    if (ci) {
+      mog(`« mock was not stored because it is CI mode run`)
+    } else if (mockExist) {
+      mog(`« mock was not stored because it exists`)
+    } else if (hasResp) {
+      mog(`« mock was not stored because matched interceptor have response property`)
+    } else if (interceptor.pass) {
+      mog(`« mock was not stored because interceptor.pass is true`)
+    } else {
       mog(`« preparing to set a new mock "${mockId}"`)
       await storage.set(mockId, { request, response })
-    } else {
-      mog(`« mock was not stored, because of any true values:`)
-      mog(`« mockExist is "${mockExist}", !!interceptor.response is "${hasResp}", interceptor.pass is "${isPassable}"`)
     }
 
     reqSet.delete(mockId)

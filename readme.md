@@ -299,3 +299,7 @@ spy.dismiss()
 Warnings and errors are printed unconditionally (all the time).
 
 Debug logs are hidden, but could be switched on with enviroment variable `DEBUG` with valies, started with `teremock...`. For example: `DEBUG=teremock* yarn jest`.
+
+## How to intercept request on a new page (e.g. popup)?
+
+It is not possible right now with puppeteer. Looking forward for https://github.com/puppeteer/puppeteer/issues/443.
