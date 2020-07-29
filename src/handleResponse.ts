@@ -1,5 +1,5 @@
 import { debug } from './logger'
-import { blacklist, getBody } from './utils'
+import { blacklist, getBody, loggerTrace } from './utils'
 import { Options, Storage, Request, Response, Meta } from './types'
 
 const logger = debug('teremock:response')
@@ -23,6 +23,8 @@ export default function createHandler(initialParams) {
     const params: Params = { ...initialParams, ...extraParams }
     const { storage, reqSet, ci, skipResponseHeaders, getMockId } = params
 
+    loggerTrace(`${request.url} → handling response`)
+
     const response = {
       ...pResponse,
       headers: blacklist(pResponse.headers, skipResponseHeaders)
@@ -33,6 +35,7 @@ export default function createHandler(initialParams) {
     const interceptor = __meta?.interceptor
 
     if (!interceptor) {
+      loggerTrace(`${request.url} → no interceptor found :(`)
       logger(`» interceptor not provided in response object, return`)
 
       return
@@ -48,14 +51,19 @@ export default function createHandler(initialParams) {
      * @todo update mock in non-ci mode
      */
     if (ci) {
+      loggerTrace(`${request.url} → ci is true, not storing`)
       mog(`« mock was not stored because it is CI mode run`)
     } else if (mockExist) {
+      loggerTrace(`${request.url} → mock already exists`)
       mog(`« mock was not stored because it exists`)
     } else if (hasResp) {
+      loggerTrace(`${request.url} → interceptor.response is defined`)
       mog(`« mock was not stored because matched interceptor have response property`)
     } else if (interceptor.pass) {
+      loggerTrace(`${request.url} → interceptor.pass is true, no store`)
       mog(`« mock was not stored because interceptor.pass is true`)
     } else {
+      loggerTrace(`${request.url} → storing mock ${mockId}`)
       mog(`« preparing to set a new mock "${mockId}"`)
       await storage.set(mockId, { request, response })
     }
@@ -66,7 +74,7 @@ export default function createHandler(initialParams) {
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')
 
-      params._onReqsCompleted()
+      params._onReqsCompleted(request)
     }
   }
 }

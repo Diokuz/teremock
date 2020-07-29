@@ -210,12 +210,15 @@ describe('teremock', () => {
 
       // * Making request with query param baz=1
       await page.evaluate(function() { fetch('/api?foo=bar&baz=1') } )
+      // @todo await some real effects
+      await sleep(99) // need some time to evaluate
       await teremock.connections()
       const firstMockId = storage.set.getCall(0).args[0]
       expect(firstMockId.length > 0).toBe(true)
 
       // * Making request with query param baz=2
       await page.evaluate(function() { fetch('/api?foo=bar&baz=2') } )
+      await sleep(99) // need some time to evaluate
       await teremock.connections()
       const secondMockId = storage.set.getCall(1).args[0]
 
@@ -551,7 +554,6 @@ describe('teremock', () => {
       expect(fs.existsSync(mockFilePath)).toBe(false)
 
       // * Starting mocker
-      console.log('getMockId')
       await teremock.start({
         page,
         getMockId: ({ url }) => {

@@ -1,3 +1,8 @@
+## 1.1.0
+
+- Deprecate teremock.connections() ← there many race-conditions when awaiting connections() is confusing and may lead to hard debugging. E.g. you start awaiting connections before actual connections were made.
+- Add teremock:trace logs for debugging.
+
 ## 1.0.1
 
 - Fix bug when spies wehe not working with inline mocks

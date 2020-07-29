@@ -300,6 +300,21 @@ Warnings and errors are printed unconditionally (all the time).
 
 Debug logs are hidden, but could be switched on with enviroment variable `DEBUG` with valies, started with `teremock...`. For example: `DEBUG=teremock* yarn jest`.
 
+### Trace
+
+Use `DEBUG=teremock:trace ...` for tracing your request. Sample output:
+
+```
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 ← page.on('request') fired +0ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 ← handling request +0ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 ← mock not found in storage +1ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 ← request.continue() +0ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 → page.on('response') fired +37ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 → handling response +53ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 → storing mock basic--get-foo-bar +1ms
+teremock:trace http://localhost:3000/api?foo=bar&baz=1 → finish +1ms
+```
+
 ## How to intercept request on a new page (e.g. popup)?
 
 It is not possible right now with puppeteer. Looking forward for https://github.com/puppeteer/puppeteer/issues/443.

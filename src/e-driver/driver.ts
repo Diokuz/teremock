@@ -157,7 +157,7 @@ class ExpressDriver implements Driver {
     this.onResponseHandler = fn
 
     return () => {
-      this.onResponseHandler = noop
+      this.onResponseHandler = () => Promise.resolve()
     }
   }
 

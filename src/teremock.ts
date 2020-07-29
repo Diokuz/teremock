@@ -22,7 +22,10 @@ class Teremock {
   private extraParams: UserOptions
   private options: Options
   private storage: Storage
+  /** set of urls of currently active connections. all connections became inactive after response. */
   private reqSet: Set<string>
+  /** set of urls of currently active connections, which cleared only on connections resolve */
+  private reqSetRet: Set<string>
   private alive: boolean
   private reqsPromise: Promise<any>
   private removeCloseHandler: Function | null
@@ -50,7 +53,10 @@ class Teremock {
   private _onAnyReqStart(req) {
     if (this.reqSet.size === 0) {
       this.reqsPromise = new Promise((resolve, reject) => {
-        this._resolveReqs = resolve
+        this._resolveReqs = () => {
+          resolve(Array.from(this.reqSetRet))
+          this.reqSetRet.clear()
+        }
         this._rejectReqs = (...args) => {
           console.trace()
           signale.log('args', args)
@@ -96,8 +102,11 @@ class Teremock {
     logger('Mocker starts with resulting params:', logParams)
 
     this.reqSet = new Set()
+    this.reqSetRet = new Set()
     // Clear on any page close, or sometimes you loose some responses on unload, and `connections` will never resolves
     this.removeCloseHandler = this.driver.onClose?.(() => {
+
+      logger('removeCloseHandler', this.reqSet.size)
       if (this.reqSet.size !== 0) {
         if (!this.options.ci) {
           signale.error(`Some connections was not completed, but navigation happened.`)
@@ -115,7 +124,13 @@ class Teremock {
       ...this.options,
       interceptors: this._interceptors,
       storage: this.storage,
-      reqSet: this.reqSet,
+      reqSet: {
+        add: (en) => {
+          this.reqSet.add(en)
+          this.reqSetRet.add(en)
+        },
+        get: () => this.reqSet,
+      },
       _onReqStarted: (req) => this._onAnyReqStart(req),
       _onReqsReject: (...args) => this._rejectReqs(...args),
     })
@@ -189,6 +204,9 @@ class Teremock {
    * @deprecated
    */
   public connections(opts = { timeout: 1000 }) {
+    signale.warn(`teremock.connections() is deprecated`)
+    signale.warn(`it is recommended to await explicit effects as a result of requests`)
+
     const { timeout } = opts
 
     if (typeof this._startPromise === 'undefined') {
@@ -198,9 +216,12 @@ class Teremock {
     const timeoutPromise = new Promise((_resolve, reject) => {
       setTimeout(() => reject(new Error(`failed to await connectins in ${timeout} ms`)), timeout)
     })
-    const connectionsPromise = this.reqsPromise || Promise.resolve()
 
-    return Promise.race([timeoutPromise, connectionsPromise])
+    if (typeof this.reqsPromise === 'undefined') {
+      throw new Error(`no connections, nothing to await`)
+    }
+
+    return Promise.race([timeoutPromise, this.reqsPromise])
   }
 
   public spy(spyInterceptor: UserInterceptor) {

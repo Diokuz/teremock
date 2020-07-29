@@ -3,8 +3,10 @@
     "url": "http://localhost:3000/api?q=%D1%84t",
     "method": "GET",
     "headers": {
+      "sec-ch-ua": "",
       "referer": "http://localhost:3000/",
-      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36"
+      "sec-ch-ua-mobile": "?0",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/85.0.4182.0 Safari/537.36"
     },
     "resourceType": "fetch"
   },

@@ -6,6 +6,7 @@ import { humanize } from './words-hash'
 import defaultGetMockId from './mock-id'
 
 const loggerint = debug('teremock:utils:interceptor')
+export const loggerTrace = debug('teremock:trace')
 
 export function assignResponse(response1: Response, response2?: Partial<Response>): Response {
   return {

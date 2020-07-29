@@ -129,7 +129,7 @@ export type DriverResponse = {
 
 export type OnRequestHandler = (arg: DriverRequest) => void
 
-export type OnResponseHandler = (arg: DriverResponse) => void
+export type OnResponseHandler = (arg: DriverResponse) => Promise<void>
 
 export interface Driver {
   setRequestInterception: (switchOn: boolean) => void

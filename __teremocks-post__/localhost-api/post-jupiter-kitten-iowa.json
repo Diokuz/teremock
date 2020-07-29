@@ -3,10 +3,11 @@
     "url": "http://localhost:3000/api",
     "method": "POST",
     "headers": {
+      "sec-ch-ua": "",
       "accept": "application/json",
       "referer": "http://localhost:3000/",
-      "origin": "http://localhost:3000",
-      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/79.0.3945.0 Safari/537.36",
+      "sec-ch-ua-mobile": "?0",
+      "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/85.0.4182.0 Safari/537.36",
       "content-type": "application/json"
     },
     "body": {

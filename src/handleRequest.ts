@@ -1,5 +1,5 @@
 import signale, { debug } from './logger'
-import { findInterceptor, parseUrl, assignResponse, getBody, getQuery } from './utils'
+import { findInterceptor, parseUrl, assignResponse, getBody, getQuery, loggerTrace } from './utils'
 import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
 import { DEFAULT_RESP_HEADERS } from './consts'
 
@@ -8,7 +8,7 @@ import { DEFAULT_RESP_HEADERS } from './consts'
 const logger = debug('teremock:request')
 
 type Params = Options & {
-  reqSet: Set<string>
+  reqSet: { add: (x: string) => void; get: () => Set<string> }
   _onReqStarted: Function
   _onReqsReject: Function
   storage: Storage
@@ -93,6 +93,8 @@ export default function createHandler(initialParams) {
     const { interceptors, storage, reqSet, ci, responseOverrides, getMockId } = params
 
     const reqParams = { url: request.url, method: request.method, body: request.body }
+
+    loggerTrace(`${request.url} ← handling request`)
     logger(`» intercepted request with method "${request.method}" and url "${request.url}"`)
     logger(`request handling for:`, reqParams)
     logger(`request headers :`, request.headers)
@@ -115,6 +117,7 @@ export default function createHandler(initialParams) {
     mog(`interceptor found`, interceptor)
 
     if (interceptor.pass) {
+      loggerTrace(`${request.url} ← passing to real server`)
       mog(`» interceptor.pass is true, sending it to real server next(interceptor)`)
       next(interceptor)
       return
@@ -122,9 +125,10 @@ export default function createHandler(initialParams) {
 
     params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body })
     reqSet.add(mockId)
-    mog('» reqSet is', Array.from(reqSet))
+    mog('» reqSet is', Array.from(reqSet.get()))
 
     if (interceptor.response) {
+      loggerTrace(`${request.url} ← inline response`)
       mog(`» interceptor.response defined, responding with it`)
 
       await beforeRespond({
@@ -149,6 +153,7 @@ export default function createHandler(initialParams) {
 
       const mock = await storage.get(mockId)
 
+      loggerTrace(`${request.url} ← mock ${mockId} found in storage`)
       mog(`» successfully read from "${mockId}", responding`)
 
       await beforeRespond({
@@ -161,6 +166,7 @@ export default function createHandler(initialParams) {
         increment,
       })
     } else {
+      loggerTrace(`${request.url} ← mock not found in storage`)
       mog(`» mock does not exist!`, ci)
 
       if (ci) {
