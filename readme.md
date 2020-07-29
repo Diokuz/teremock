@@ -303,3 +303,23 @@ Debug logs are hidden, but could be switched on with enviroment variable `DEBUG`
 ## How to intercept request on a new page (e.g. popup)?
 
 It is not possible right now with puppeteer. Looking forward for https://github.com/puppeteer/puppeteer/issues/443.
+
+## Brief review of mockers
+
+### Puppeteer based mockers
+
+This type of mockers (which teremock belongs to) could mock any client-side request, including xhr, fetch, script, images, redirect pages. But 1) cannot mock websockets 2) cannot mock server-side request 3) cannot mock initial request of new page.
+
+1. Teremock
+
+### Server-side (nodejs) mockers
+
+This type of mockers have one fundamental limitation: you have to be in the same nodejs process. This type of mockers wont work for you if your app runs in a separate process (including child process), than your testing framework.
+
+1. [Nock](https://github.com/nock/nock#readme) ← simple and powerfull mocker, which decorates native http.request and http.ClientRequest functions.
+
+### Separate mocked real endpoints
+
+This type of mockers allows you to test your system very close to the real network topology, but only if you could configure all your endpoints (change real urls to your mocked endpoints).
+
+1. [MockIt](https://github.com/boyney123/mockit)  ← allows fastly create stub endpoints. It is better in cases when you have isomorphic applications, and you have requests both – on server and on client-side.

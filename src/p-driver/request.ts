@@ -1,7 +1,7 @@
 import debug from 'debug'
 import { Request, Response, DriverRequest, Interceptor } from '../types'
 
-const logger = debug('teremock:puppeteer:request')
+const logger = debug('teremock:driver:puppeteer:request')
 
 export async function extractPuppeteerRequest(puppeteerRequest): Promise<DriverRequest> {
   const request: Request = {

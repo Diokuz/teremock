@@ -128,10 +128,7 @@ class ExpressDriver implements Driver {
               })
             }
 
-            res
-              .status(sendResp.status)
-              .set(sendResp.headers)
-              .send(sendResp.body)
+            res.status(sendResp.status).set(sendResp.headers).send(sendResp.body)
           } catch (e) {
             logger.error(e.message)
           }
