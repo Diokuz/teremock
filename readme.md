@@ -279,7 +279,23 @@ Both `mocker.start()` and `mocker.stop()` return a `Promise`.
 
 ### mocker.stop()
 
-### mocker.add()
+Stops teremock, removes all handlers from puppeteer, disables request interception.
+
+### mocker.add(interceptor)
+
+Adds new interceptor to teremock in the middle of a test. Interceptor have priority over `interceptors`, defined in teremock.start(). To remove it, just call function which was returned:
+
+```ts
+const remove404 = mocker.add({ url: 'example.com', response: { status: 404 } })
+// ... request for 'example.com' → check 404 behaviour here
+remove404()
+
+const remove500 = mocker.add({ url: 'example.com', response: { status: 500 } })
+// .. same request for 'example.com' → check 500 behaviour here
+remove500()
+```
+
+Note: in most cases you dont need dynamic interceptors – it is better to write two different tests.
 
 ### mocker.spy(interceptor)
 
