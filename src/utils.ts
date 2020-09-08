@@ -86,29 +86,25 @@ export function getQuery(url) {
   }, {})
 }
 
-export function isBodyMatched(body, request: Request) {
+export function isBodyMatched(value, request: Request) {
   const { headers } = request
   if (!headers) {
     return false
   }
   if (headers['content-type'] === 'application/x-www-form-urlencoded') {
-    const formData = getFormData(request)
+    const formData = getFormData(request.body)
     return (
-      Object.keys(body).reduce((a, k) => {
-        return a && body[k] === formData[k]
+      Object.keys(value).reduce((a, k) => {
+        return a && value[k] === formData[k]
       }, true)
     )
   }
   return false
 }
 
-export function getFormData(request: Request) {
-  const { body, headers } = request
-  const result = {}
-  if (!body || !headers || headers['content-type'] !== 'application/x-www-form-urlencoded') {
-    return result
-  }
+export function getFormData(body) {
   const params = body.split('&')
+  const result = {}
   params.forEach(param => {
     const paramsPart = param.split('=')
     result[decodeURIComponent(paramsPart[0])] = decodeURIComponent(paramsPart[1])
