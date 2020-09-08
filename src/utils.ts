@@ -49,6 +49,15 @@ export const isInterceptorMatched = (interceptor: Interceptor, request: Request)
             return a && value[k] === query[k]
           }, true)
         )
+      case 'formData':
+        const formData = getFormData(request)
+
+        return (
+          acc &&
+          Object.keys(value).reduce((a, k) => {
+            return a && value[k] === formData[k]
+          }, true)
+        )
       case 'resourceTypes':
         return acc && value.has(resourceType.toLowerCase())
       default:
@@ -82,6 +91,20 @@ export function getQuery(url) {
 
     return acc
   }, {})
+}
+
+export function getFormData(request: Request) {
+  const { body, headers } = request
+  const result = {}
+  if (!body || !headers || headers['content-type'] !== 'application/x-www-form-urlencoded') {
+    return result
+  }
+  const params = body.split('&')
+  params.forEach(param => {
+    const paramsPart = param.split('=')
+    result[decodeURIComponent(paramsPart[0])] = decodeURIComponent(paramsPart[1])
+  })
+  return result
 }
 
 export function parseUrl(url) {
