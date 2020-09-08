@@ -1,7 +1,3 @@
-## 1.2.0
-
-- Add formData support in interceptor.body filter.
-
 ## 1.1.0
 
 - Deprecate teremock.connections() ← there many race-conditions when awaiting connections() is confusing and may lead to hard debugging. E.g. you start awaiting connections before actual connections were made.
