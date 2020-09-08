@@ -1,4 +1,4 @@
-const { findInterceptor, getQuery, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor } = require('../src/utils')
+const { findInterceptor, getQuery, getFormData, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor } = require('../src/utils')
 const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../src/consts')
 
 describe('findInterceptor', () => {
@@ -115,6 +115,19 @@ describe('getQuery', () => {
 
   it('foo=bar', () => {
     expect(getQuery('http://example.com?foo=bar')).toEqual({ foo: 'bar' })
+  })
+})
+
+describe('getFormData', () => {
+  it('parse formData body', () => {
+    expect(getFormData('foo=bar')).toEqual({foo: 'bar'})
+  })
+  it('duplicates ignored', () => {
+    expect(getFormData('foo=bar&foo=baz')).toEqual({foo: 'baz'})
+  })
+  it('decode utf8', () => {
+    expect(getFormData('agreement=1&name=%D0%9F%D1%80%D0%B8%3D%D1%84'))
+      .toEqual({agreement: '1', name: 'При=ф'})
   })
 })
 
