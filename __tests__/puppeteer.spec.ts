@@ -386,55 +386,7 @@ describe('teremock', () => {
 
       await teremock.stop()
     })
-
-    it('teremock.spy formData incorrect', async () => {
-      await page.goto('http://localhost:3000')
-
-      // * Starting mocker
-      await teremock.start({ page })
-
-      // * Creating a spy
-      const spy = teremock.spy({
-        url: 'http://localhost:3000/api',
-        body: {
-          foo: 'bar'
-        }
-      })
-
-      // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
-      await page.click('#button-form')
-      await sleep(50)
-
-      expect(spy.called).toBe(false)
-      expect(spy.calledOnce).toBe(false)
-
-      await teremock.stop()
-    })
-
-  it('teremock.spy formData correct', async () => {
-    await page.goto('http://localhost:3000')
-
-    // * Starting mocker
-    await teremock.start({ page })
-
-    // * Creating a spy
-    const spy = teremock.spy({
-      url: 'http://localhost:3000/api',
-      body: {
-        say: 'Hi'
-      }
-    })
-
-    // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
-    await page.click('#button-form')
-    await sleep(50)
-
-    expect(spy.called).toBe(true)
-    expect(spy.calledOnce).toBe(true)
-
-    await teremock.stop()
   })
-})
 
   describe('teremock.add', () => {
     it('teremock.add simple case', async () => {

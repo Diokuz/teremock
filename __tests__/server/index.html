@@ -52,32 +52,13 @@
       <div class='suggest'>Start typing 'abc' and wait for CORS-requests</div>
       <input type='text' id='input-cors' placeholder="CORS" />
       <div class='suggest' id="suggest-cors">&nbsp;</div>
-
-      <div class='suggest'>Press 'send' for making form-data request</div>
-      <button id="button-form">Send</button>>
     </div>
 
     <script>
       const button = document.querySelector('#button')
-      const buttonForm = document.querySelector('#button-form')
       const suggest = document.querySelector('#suggest')
       const suggestPost = document.querySelector('#suggest-post')
       const suggestCors = document.querySelector('#suggest-cors')
-
-      function sendData( data, url ) {
-        const XHR = new XMLHttpRequest()
-
-        let urlEncodedData = ""
-        let urlEncodedDataPairs = []
-        let name
-        for( name in data ) {
-          urlEncodedDataPairs.push( encodeURIComponent( name ) + '=' + encodeURIComponent( data[name] ) )
-        }
-        urlEncodedData = urlEncodedDataPairs.join( '&' ).replace( /%20/g, '+' )
-        XHR.open( 'POST', url )
-        XHR.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded' )
-        XHR.send( urlEncodedData )
-      }
 
       document.querySelector('#button').addEventListener('click', (e) => {
         fetch(`/api?q=click`)
@@ -87,10 +68,6 @@
 
             button.innerText = `${status} ${j.suggest}`
           })
-      })
-
-      document.querySelector('#button-form').addEventListener('click', (e) => {
-        sendData({say: 'Hi'}, '/api')
       })
 
       document.querySelector('#input').addEventListener('keyup', (e) => {
