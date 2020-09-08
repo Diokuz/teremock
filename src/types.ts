@@ -84,10 +84,7 @@ export type UserInterceptor = {
   methods?: Set<string> | string
   resourceTypes?: Set<string> | string
   query?: Record<string, any>
-  body?: {
-    type: string,
-    [key: string]: any
-  }
+  body?: Record<string, any>
   pass?: boolean
   naming?: Naming
   response?: DefResponse

@@ -397,8 +397,7 @@ describe('teremock', () => {
       const spy = teremock.spy({
         url: 'http://localhost:3000/api',
         body: {
-          type: 'formData',
-          values: {foo: 'bar'}
+          foo: 'bar'
         }
       })
 
@@ -422,8 +421,7 @@ describe('teremock', () => {
     const spy = teremock.spy({
       url: 'http://localhost:3000/api',
       body: {
-        type: 'formData',
-        values: {say: 'Hi'}
+        say: 'Hi'
       }
     })
 

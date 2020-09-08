@@ -87,17 +87,15 @@ export function getQuery(url) {
 }
 
 export function isBodyMatched(body, request: Request) {
-  const { type } = body
   const { headers } = request
   if (!headers) {
     return false
   }
-  if (type === 'formData' && headers['content-type'] === 'application/x-www-form-urlencoded') {
-    const { values } = body
+  if (headers['content-type'] === 'application/x-www-form-urlencoded') {
     const formData = getFormData(request)
     return (
-      Object.keys(values).reduce((a, k) => {
-        return a && values[k] === formData[k]
+      Object.keys(body).reduce((a, k) => {
+        return a && body[k] === formData[k]
       }, true)
     )
   }
