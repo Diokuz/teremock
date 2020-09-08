@@ -92,7 +92,7 @@ export default function createHandler(initialParams) {
     const params: Params = { ...initialParams, ...extraParams }
     const { interceptors, storage, reqSet, ci, responseOverrides, getMockId } = params
 
-    const reqParams = { url: request.url, method: request.method, body: request.body, headers: request.headers }
+    const reqParams = { url: request.url, method: request.method, body: request.body }
 
     loggerTrace(`${request.url} ← handling request`)
     logger(`» intercepted request with method "${request.method}" and url "${request.url}"`)
@@ -123,7 +123,7 @@ export default function createHandler(initialParams) {
       return
     }
 
-    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body, headers: request.headers })
+    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body })
     reqSet.add(mockId)
     mog('» reqSet is', Array.from(reqSet.get()))
 

@@ -1,4 +1,4 @@
-const { findInterceptor, getQuery, getFormData, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor } = require('../src/utils')
+const { findInterceptor, getQuery, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor } = require('../src/utils')
 const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../src/consts')
 
 describe('findInterceptor', () => {
