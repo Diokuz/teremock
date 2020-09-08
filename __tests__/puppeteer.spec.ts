@@ -396,7 +396,10 @@ describe('teremock', () => {
       // * Creating a spy
       const spy = teremock.spy({
         url: 'http://localhost:3000/api',
-        formData: {foo: 'bar'}
+        body: {
+          type: 'formData',
+          values: {foo: 'bar'}
+        }
       })
 
       // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
@@ -418,7 +421,10 @@ describe('teremock', () => {
     // * Creating a spy
     const spy = teremock.spy({
       url: 'http://localhost:3000/api',
-      formData: {say: 'Hi'}
+      body: {
+        type: 'formData',
+        values: {say: 'Hi'}
+      }
     })
 
     // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock

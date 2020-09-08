@@ -49,15 +49,8 @@ export const isInterceptorMatched = (interceptor: Interceptor, request: Request)
             return a && value[k] === query[k]
           }, true)
         )
-      case 'formData':
-        const formData = getFormData(request)
-
-        return (
-          acc &&
-          Object.keys(value).reduce((a, k) => {
-            return a && value[k] === formData[k]
-          }, true)
-        )
+      case 'body':
+        return acc && isBodyMatched(value, request)
       case 'resourceTypes':
         return acc && value.has(resourceType.toLowerCase())
       default:
@@ -91,6 +84,24 @@ export function getQuery(url) {
 
     return acc
   }, {})
+}
+
+export function isBodyMatched(body, request: Request) {
+  const { type } = body
+  const { headers } = request
+  if (!headers) {
+    return false
+  }
+  if (type === 'formData' && headers['content-type'] === 'application/x-www-form-urlencoded') {
+    const { values } = body
+    const formData = getFormData(request)
+    return (
+      Object.keys(values).reduce((a, k) => {
+        return a && values[k] === formData[k]
+      }, true)
+    )
+  }
+  return false
 }
 
 export function getFormData(request: Request) {
