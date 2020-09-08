@@ -49,6 +49,8 @@ export const isInterceptorMatched = (interceptor: Interceptor, request: Request)
             return a && value[k] === query[k]
           }, true)
         )
+      case 'body':
+        return acc && isBodyMatched(value, request)
       case 'resourceTypes':
         return acc && value.has(resourceType.toLowerCase())
       default:
@@ -82,6 +84,32 @@ export function getQuery(url) {
 
     return acc
   }, {})
+}
+
+export function isBodyMatched(value, request: Request) {
+  const { headers } = request
+  if (!headers) {
+    return false
+  }
+  if (headers['content-type'] === 'application/x-www-form-urlencoded') {
+    const formData = getFormData(request.body)
+    return (
+      Object.keys(value).reduce((a, k) => {
+        return a && value[k] === formData[k]
+      }, true)
+    )
+  }
+  return false
+}
+
+export function getFormData(body) {
+  const params = body.split('&')
+  const result = {}
+  params.forEach(param => {
+    const paramsPart = param.split('=')
+    result[decodeURIComponent(paramsPart[0])] = decodeURIComponent(paramsPart[1])
+  })
+  return result
 }
 
 export function parseUrl(url) {
