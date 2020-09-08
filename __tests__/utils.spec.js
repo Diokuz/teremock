@@ -119,26 +119,14 @@ describe('getQuery', () => {
 })
 
 describe('getFormData', () => {
-  it('no body', () => {
-    expect(getFormData({})).toEqual({})
-  })
-  it('no headers', () => {
-    expect(getFormData({body: ''})).toEqual({})
-  })
-  it('incorrect content-type', () => {
-    expect(getFormData({body: '', headers: {'content-type': 'text'}})).toEqual({})
-  })
   it('parse formData body', () => {
-    expect(getFormData({body: 'foo=bar', headers: {'content-type': 'application/x-www-form-urlencoded'}})).toEqual({foo: 'bar'})
+    expect(getFormData('foo=bar')).toEqual({foo: 'bar'})
   })
   it('duplicates ignored', () => {
-    expect(getFormData({body: 'foo=bar&foo=baz', headers: {'content-type': 'application/x-www-form-urlencoded'}})).toEqual({foo: 'baz'})
+    expect(getFormData('foo=bar&foo=baz')).toEqual({foo: 'baz'})
   })
   it('decode utf8', () => {
-    expect(getFormData({
-        body: 'agreement=1&name=%D0%9F%D1%80%D0%B8%3D%D1%84',
-        headers: {'content-type': 'application/x-www-form-urlencoded'}}
-      ))
+    expect(getFormData('agreement=1&name=%D0%9F%D1%80%D0%B8%3D%D1%84'))
       .toEqual({agreement: '1', name: 'При=ф'})
   })
 })
