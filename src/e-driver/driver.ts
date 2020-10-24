@@ -128,6 +128,10 @@ class ExpressDriver implements Driver {
               })
             }
 
+            // it doesn't matter what content-encoding was originally,
+            // teremock has already decoded the response
+            sendResp.headers['content-encoding'] = 'identity'
+            delete sendResp.headers['x-content-encoding-over-network']
             res.status(sendResp.status).set(sendResp.headers).send(sendResp.body)
           } catch (e) {
             logger.error(e.message)
