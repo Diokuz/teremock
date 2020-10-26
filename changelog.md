@@ -1,3 +1,8 @@
+## 1.4.0
+
+- Remove content-encoding header for e-driver responses
+- Update all deps
+
 ## 1.3.0
 
 - Add formData support for interceptor.body predicate.
