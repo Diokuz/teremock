@@ -72,13 +72,10 @@ const getRequestId = (params: Params) => {
 
   // @todo remove it from here, rename body to body
   if (body !== '' && headers) {
-    switch (headers['content-type']) {
-      case 'application/json':
-        bodyObj = JSON.parse(body)
-        break
-      default:
-        bodyObj = queryString.parse(body)
-        break
+    if (headers['content-type'] && headers['content-type'].includes('application/json')) {
+      bodyObj = JSON.parse(body)
+    } else {
+      bodyObj = queryString.parse(body)
     }
   }
 
