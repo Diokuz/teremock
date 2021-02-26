@@ -1,3 +1,7 @@
+## 1.5.0
+
+- Request Body matching for application/json requests
+
 ## 1.4.0
 
 - Remove content-encoding header for e-driver responses
