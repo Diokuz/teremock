@@ -91,15 +91,23 @@ export function isBodyMatched(value, request: Request) {
   if (!headers) {
     return false
   }
+  let formData = {}
   if (headers['content-type'] === 'application/x-www-form-urlencoded') {
-    const formData = getFormData(request.body)
-    return (
-      Object.keys(value).reduce((a, k) => {
-        return a && value[k] === formData[k]
-      }, true)
-    )
+      formData = getFormData(request.body)
+  } else if (
+    headers['content-type'] === 'application/json'
+    && typeof request.body === 'string'
+  ) {
+    try {
+      formData = JSON.parse(request.body)
+    } catch (e) {
+      return false
+    }
   }
-  return false
+  return (Object.keys(value).reduce((a, k) => {
+      // won't work with nested objects
+      return a && value[k] === formData[k]
+  }, true))
 }
 
 export function getFormData(body) {

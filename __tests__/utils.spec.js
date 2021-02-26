@@ -1,4 +1,4 @@
-const { findInterceptor, getQuery, getFormData, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor } = require('../src/utils')
+const { findInterceptor, getQuery, getFormData, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor, isBodyMatched } = require('../src/utils')
 const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../src/consts')
 
 describe('findInterceptor', () => {
@@ -128,6 +128,57 @@ describe('getFormData', () => {
   it('decode utf8', () => {
     expect(getFormData('agreement=1&name=%D0%9F%D1%80%D0%B8%3D%D1%84'))
       .toEqual({agreement: '1', name: 'При=ф'})
+  })
+})
+
+describe('isBodyMatched', () => {
+  let request = {
+    url: 'http://example.com',
+    method: 'post',
+    resourceType: 'fetch',
+  }
+
+  describe('application/json', () => {
+    request = {
+      ...request,
+      body: '{"foo":"bar"}',
+      headers: {
+        'content-type': 'application/json'
+      }
+    }
+    it('empty body', () => {
+      expect(isBodyMatched({}, request)).toEqual(true)
+    })
+    it('body matched', () => {
+      expect(isBodyMatched({foo: 'bar'}, request)).toEqual(true)
+    })
+    it('body not matched', () => {
+      expect(isBodyMatched({foo: 'baz'}, request)).toEqual(false)
+    })
+    it('invalid body', () => {
+      expect(isBodyMatched({foo: 'bar'}, {
+        ...request,
+        body: '',
+      })).toEqual(false)
+    })
+  })
+  describe('application/x-www-form-urlencoded', () => {
+    request = {
+      ...request,
+      body: 'foo=bar',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded'
+      }
+    }
+    it('empty body', () => {
+      expect(isBodyMatched({}, request)).toEqual(true)
+    })
+    it('body matched', () => {
+      expect(isBodyMatched({foo: 'bar'}, request)).toEqual(true)
+    })
+    it('body not matched', () => {
+      expect(isBodyMatched({foo: 'baz'}, request)).toEqual(false)
+    })
   })
 })
 
