@@ -72,8 +72,10 @@ class Teremock {
           spy.callCount++
           spy.calledOnce = spy.callCount === 1
           const { requestId, requestTimestamp } = req
-          spy.requestsLog[requestId] = {
-            requestTimestamp
+          if (requestId !== -1) {
+            spy.requestsLog[requestId] = {
+              requestTimestamp
+            }
           }
         }
       })
