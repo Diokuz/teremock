@@ -145,6 +145,7 @@ export interface Driver {
 export type RequestTimeInfo = {
   requestTimestamp: number
   responseTimestamp?: number
+  requestId: number
 }
 
 export type Spy = {

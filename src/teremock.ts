@@ -73,9 +73,10 @@ class Teremock {
           spy.calledOnce = spy.callCount === 1
           const { requestId, requestTimestamp } = req
           if (requestId !== -1) {
-            spy.requestsLog[requestId] = {
-              requestTimestamp
-            }
+            spy.requestsLog.push({
+              requestTimestamp,
+              requestId
+            })
           }
         }
       })
@@ -87,7 +88,12 @@ class Teremock {
       this._spies.forEach(([interceptor, spy]) => {
         if (isInterceptorMatched(interceptor, req)) {
           const { requestId, responseTimestamp } = req
-          spy.requestsLog[requestId].responseTimestamp = responseTimestamp
+          if (requestId !== -1) {
+            const requestObj = spy.requestsLog.find(obj => obj.requestId === requestId)
+            if (requestObj) {
+              requestObj.responseTimestamp = responseTimestamp
+            }
+          }
         }
       })
     }
