@@ -372,9 +372,10 @@ describe('teremock', () => {
       // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
       await page.click('#button')
       await sleep(35)
-      expect(spy.requestsLog.length).toBe(1)
-      expect(spy.responsesLog.length).toBe(1)
-      expect(spy.responsesLog[0] > spy.requestsLog[0]).toBe(true)
+      const requestsLogKeys = Object.keys(spy.requestsLog)
+      expect(requestsLogKeys.length).toBe(1)
+      const { requestTimestamp, responseTimestamp } = spy.requestsLog[requestsLogKeys[0]]
+      expect(responseTimestamp > requestTimestamp).toBe(true)
       await teremock.stop()
     })
 

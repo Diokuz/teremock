@@ -71,7 +71,10 @@ class Teremock {
           spy.called = true
           spy.callCount++
           spy.calledOnce = spy.callCount === 1
-          spy.requestsLog.push(new Date().getTime())
+          const { requestId, requestTimestamp } = req
+          spy.requestsLog[requestId] = {
+            requestTimestamp
+          }
         }
       })
     }
@@ -81,7 +84,8 @@ class Teremock {
     if (this._spies.length > 0) {
       this._spies.forEach(([interceptor, spy]) => {
         if (isInterceptorMatched(interceptor, req)) {
-          spy.responsesLog.push(new Date().getTime())
+          const { requestId, responseTimestamp } = req
+          spy.requestsLog[requestId].responseTimestamp = responseTimestamp
         }
       })
     }
@@ -245,7 +249,6 @@ class Teremock {
         this._spies = this._spies.filter(([_i, s]) => s !== spy)
       },
       requestsLog: [],
-      responsesLog: []
     }
 
     this._spies.push([interceptor, spy])

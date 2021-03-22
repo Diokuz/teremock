@@ -29,7 +29,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     requestBody = puppeteerRequest.postData()
   }
 
-  // const timestamp = Date.now()
+  const timestamp = Date.now()
 
   const request: Request = {
     url: puppeteerRequest.url(),
@@ -37,6 +37,8 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     headers: puppeteerRequest.headers(),
     body: requestBody,
     resourceType: puppeteerRequest.resourceType(),
+    id: puppeteerRequest.teremockRequest.id,
+    timestamp: puppeteerRequest.teremockRequest.timestamp
   }
 
   const response: Response = {
@@ -44,6 +46,8 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     status: puppeteerResponse.status(),
     headers: puppeteerResponse.headers(),
     body: responseBody,
+    requestId: puppeteerRequest.teremockRequest.id,
+    timestamp
     // ttfb: timestamp - puppeteerRequest.timestamp,
   }
 
