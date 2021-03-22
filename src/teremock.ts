@@ -71,6 +71,17 @@ class Teremock {
           spy.called = true
           spy.callCount++
           spy.calledOnce = spy.callCount === 1
+          spy.requestsLog.push(new Date().getTime())
+        }
+      })
+    }
+  }
+  private _onAnyReqEnd(req) {
+    this._resolveReqs(req)
+    if (this._spies.length > 0) {
+      this._spies.forEach(([interceptor, spy]) => {
+        if (isInterceptorMatched(interceptor, req)) {
+          spy.responsesLog.push(new Date().getTime())
         }
       })
     }
@@ -140,7 +151,7 @@ class Teremock {
       interceptors: this._interceptors,
       storage: this.storage,
       reqSet: this.reqSet,
-      _onReqsCompleted: () => this._resolveReqs(),
+      _onReqsCompleted: (req) => this._onAnyReqEnd(req),
       _onReqsReject: (...args) => this._rejectReqs(...args),
     })
 
@@ -233,6 +244,8 @@ class Teremock {
       dismiss: () => {
         this._spies = this._spies.filter(([_i, s]) => s !== spy)
       },
+      requestsLog: [],
+      responsesLog: []
     }
 
     this._spies.push([interceptor, spy])

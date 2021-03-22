@@ -143,5 +143,7 @@ export type Spy = {
   calledOnce: boolean
   callCount: number
   dismiss: () => void
+  requestsLog: number[],
+  responsesLog: number[]
 }
 export type SpyTuple = [Interceptor, Spy]
