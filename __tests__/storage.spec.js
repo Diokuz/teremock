@@ -10,13 +10,13 @@ const PROJECT_ROOT = process.cwd()
 it('filename for domain with path', () => {
   const name = getFileName({ mockId: 'a--b', wd: '/diokuz/dir' })
 
-  expect(name).toBe('/diokuz/dir/a/b.json')
+  expect(name).toContain('/diokuz/dir/a/b.json')
 })
 
 it('filename for domain with path/', () => {
   const name = getFileName({ mockId: 'example-com--path-api', wd: '/diokuz/dir' })
 
-  expect(name).toBe('/diokuz/dir/example-com/path-api.json')
+  expect(name).toContain('/diokuz/dir/example-com/path-api.json')
 })
 
 describe('storage.get', () => {
