@@ -14,7 +14,7 @@ export async function extractPuppeteerRequest(puppeteerRequest): Promise<DriverR
     body: puppeteerRequest.postData(),
     resourceType: puppeteerRequest.resourceType(),
     id: requestsCounter++,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   }
 
   puppeteerRequest.timestamp = Date.now()

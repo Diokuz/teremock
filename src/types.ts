@@ -6,8 +6,8 @@ export type Request = {
   headers?: Headers
   body?: string | Record<string, any>
   resourceType: string
-  id: number
-  timestamp: number
+  id?: number
+  timestamp?: number
 }
 
 export type ArgRequest = Request & { query: Record<string, string> }
@@ -21,7 +21,7 @@ export type Response = {
   // 2. It makes impossible simultaneous use of response.ttfb and options.response.ttfb
   ttfb?: number | number[]
   body?: string | Record<string, any>
-  timestamp: number
+  timestamp?: number
 }
 
 export type GetMockIdParams = {
