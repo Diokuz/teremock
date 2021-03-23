@@ -9,6 +9,7 @@ import { performance } from 'perf_hooks'
 const loggerint = debug('teremock:utils:interceptor')
 export const loggerTrace = debug('teremock:trace')
 const startTime = Date.now()
+let orderCounter = 0
 
 export function assignResponse(response1: Response, response2?: Partial<Response>): Response {
   return {
@@ -27,7 +28,10 @@ type InParams = {
 }
 
 export const getHighResTimestamp = () => {
-  return startTime + performance.now()
+  return {
+    time: startTime + performance.now(),
+    orderMark: ++orderCounter
+  }
 }
 
 export const isInterceptorMatched = (interceptor: Interceptor, request: Request) => {

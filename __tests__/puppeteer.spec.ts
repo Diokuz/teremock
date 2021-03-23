@@ -374,7 +374,7 @@ describe('teremock', () => {
       await sleep(35)
       expect(spy.events.length).toBe(1)
       const { requestTimestamp, responseTimestamp } = spy.events[0]
-      expect(responseTimestamp && responseTimestamp > requestTimestamp).toBe(true)
+      expect(responseTimestamp && responseTimestamp.orderMark > requestTimestamp.orderMark).toBe(true)
       await teremock.stop()
     })
 

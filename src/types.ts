@@ -141,9 +141,14 @@ export interface Driver {
   onClose: (fn: any) => Function
 }
 
+export type HighResTimeStamp = {
+  time: number,
+  orderMark: number
+}
+
 export type RequestTimeInfo = {
-  requestTimestamp: number
-  responseTimestamp?: number
+  requestTimestamp: HighResTimeStamp
+  responseTimestamp?: HighResTimeStamp
   requestId: number
 }
 
