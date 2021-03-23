@@ -20,6 +20,8 @@ type MockedResponseResolve = {
 }
 type RespondResolve = RealResponseResolve | MockedResponseResolve
 
+let id = 0
+
 export async function extractExpressRequest(req, res, realUrl: string, getRealResponse: GetRealResponse): Promise<Ret> {
   const request: Request = {
     url: realUrl,
@@ -28,6 +30,8 @@ export async function extractExpressRequest(req, res, realUrl: string, getRealRe
     headers: req.headers,
     body: req.body,
     resourceType: 'xhr',
+    id: id++,
+    timestamp: Date.now(),
   }
 
   let resolve: (arg: RespondResolve) => void

@@ -1,3 +1,7 @@
+## 1.6.0
+
+- Add request id and request/response timestamps (see also spy.events)
+
 ## 1.5.0
 
 - Request Body matching for application/json requests
