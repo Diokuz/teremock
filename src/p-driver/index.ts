@@ -41,9 +41,10 @@ class PuppeteerDriver implements Driver {
 
   public onRequest(fn: OnRequestHandler) {
     const handler = async (interceptedRequest) => {
+      const timestamp = Date.now()
       loggerTrace(`${interceptedRequest.url()} ← page.on('request') fired`)
 
-      const { request, abort, next, respond } = await extractPuppeteerRequest(interceptedRequest)
+      const { request, abort, next, respond } = await extractPuppeteerRequest(interceptedRequest, timestamp)
 
       fn({ request, abort, next, respond })
     }
@@ -60,11 +61,12 @@ class PuppeteerDriver implements Driver {
 
   public onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
+      const timestamp = Date.now()
       const url = interceptedResponse.request().url()
 
       loggerTrace(`${url} → page.on('response') fired`)
 
-      await fn(await extractPuppeteerResponse(interceptedResponse))
+      await fn(await extractPuppeteerResponse(interceptedResponse, timestamp))
 
       loggerTrace(`${url} → finish`)
     }

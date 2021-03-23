@@ -4,7 +4,7 @@ import signale from '../logger'
 
 const logger = debug('teremock:driver:puppeteer:response')
 
-export async function extractPuppeteerResponse(puppeteerResponse): Promise<DriverResponse> {
+export async function extractPuppeteerResponse(puppeteerResponse, timestamp): Promise<DriverResponse> {
   const puppeteerRequest = puppeteerResponse.request()
 
   let requestBody: string | Record<string, any>
@@ -29,7 +29,6 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     requestBody = puppeteerRequest.postData()
   }
 
-  const timestamp = Date.now()
   const { teremockRequest } = puppeteerRequest
 
   const request: Request = {
