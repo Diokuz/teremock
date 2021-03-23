@@ -6,6 +6,7 @@ const logger = debug('teremock:response')
 
 type Params = Options & {
   reqSet: Set<string>
+  _onReqCompleted: Function
   _onReqsCompleted: Function
   storage: Storage
 }
@@ -73,6 +74,10 @@ export default function createHandler(initialParams) {
 
     reqSet.delete(mockId)
     mog('« reqSet after delete is', Array.from(reqSet))
+
+    const { id, timestamp } = request
+
+    params._onReqCompleted({requestId: id, requestTimestamp: timestamp, responseTimestamp: pResponse.timestamp})
 
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')

@@ -83,7 +83,6 @@ class Teremock {
     }
   }
   private _onAnyReqEnd(req) {
-    this._resolveReqs(req)
     if (this._spies.length > 0) {
       this._spies.forEach(([interceptor, spy]) => {
         if (isInterceptorMatched(interceptor, req)) {
@@ -163,7 +162,8 @@ class Teremock {
       interceptors: this._interceptors,
       storage: this.storage,
       reqSet: this.reqSet,
-      _onReqsCompleted: (req) => this._onAnyReqEnd(req),
+      _onReqCompleted: (req) => this._onAnyReqEnd(req),
+      _onReqsCompleted: () => this._resolveReqs(),
       _onReqsReject: (...args) => this._rejectReqs(...args),
     })
 
