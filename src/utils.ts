@@ -4,9 +4,11 @@ import { Request, Response, Options, UserOptions, Interceptor, UserInterceptor }
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 import { humanize } from './words-hash'
 import defaultGetMockId from './mock-id'
+import { performance } from 'perf_hooks'
 
 const loggerint = debug('teremock:utils:interceptor')
 export const loggerTrace = debug('teremock:trace')
+const startTime = Date.now()
 
 export function assignResponse(response1: Response, response2?: Partial<Response>): Response {
   return {
@@ -22,6 +24,10 @@ export function assignResponse(response1: Response, response2?: Partial<Response
 type InParams = {
   interceptors: Record<string, Interceptor>
   request: Request
+}
+
+export const getHighResTimestamp = () => {
+  return startTime + performance.now()
 }
 
 export const isInterceptorMatched = (interceptor: Interceptor, request: Request) => {

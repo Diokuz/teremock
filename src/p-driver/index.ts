@@ -2,7 +2,7 @@ import { extractPuppeteerRequest } from './request'
 import { extractPuppeteerResponse } from './response'
 import { Driver, OnRequestHandler, OnResponseHandler } from '../types'
 import logger from '../logger'
-import { loggerTrace } from '../utils'
+import { loggerTrace, getHighResTimestamp } from '../utils'
 
 /**
  * There is no valid reason to have more than one driver instances per page
@@ -41,7 +41,7 @@ class PuppeteerDriver implements Driver {
 
   public onRequest(fn: OnRequestHandler) {
     const handler = async (interceptedRequest) => {
-      const timestamp = Date.now()
+      const timestamp = getHighResTimestamp()
       loggerTrace(`${interceptedRequest.url()} ← page.on('request') fired`)
 
       const { request, abort, next, respond } = await extractPuppeteerRequest(interceptedRequest, timestamp)
@@ -61,7 +61,7 @@ class PuppeteerDriver implements Driver {
 
   public onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
-      const timestamp = Date.now()
+      const timestamp = getHighResTimestamp()
       const url = interceptedResponse.request().url()
 
       loggerTrace(`${url} → page.on('response') fired`)
