@@ -360,6 +360,24 @@ describe('teremock', () => {
       await teremock.stop()
     })
 
+    it('teremock.spy requests/responseLogs', async () => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page })
+      const spy = teremock.spy({
+        url: 'http://localhost:3000/api',
+      })
+
+      // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
+      await page.click('#button')
+      await sleep(35)
+      expect(spy.events.length).toBe(1)
+      const { requestTimestamp, responseTimestamp } = spy.events[0]
+      expect(responseTimestamp && responseTimestamp > requestTimestamp).toBe(true)
+      await teremock.stop()
+    })
+
     it('teremock.spy inline mock', async () => {
       await page.goto('http://localhost:3000')
 

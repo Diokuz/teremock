@@ -73,8 +73,9 @@ export default function createHandler(initialParams) {
 
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')
+      const { id, timestamp, ...rest } = request
 
-      params._onReqsCompleted(request)
+      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, responseTimestamp: pResponse.timestamp})
     }
   }
 }

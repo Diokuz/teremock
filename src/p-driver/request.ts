@@ -4,6 +4,8 @@ import { loggerTrace } from '../utils'
 
 const logger = debug('teremock:driver:puppeteer:request')
 
+let requestsCounter: number = 0
+
 export async function extractPuppeteerRequest(puppeteerRequest): Promise<DriverRequest> {
   const request: Request = {
     url: puppeteerRequest.url(),
@@ -11,6 +13,8 @@ export async function extractPuppeteerRequest(puppeteerRequest): Promise<DriverR
     headers: puppeteerRequest.headers(),
     body: puppeteerRequest.postData(),
     resourceType: puppeteerRequest.resourceType(),
+    id: requestsCounter++,
+    timestamp: Date.now()
   }
 
   puppeteerRequest.timestamp = Date.now()

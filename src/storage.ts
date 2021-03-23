@@ -5,12 +5,15 @@ import debug from 'debug'
 import signale from './logger'
 import { Storage, Request, Response } from './types'
 
+const os = require('os')
+const pathToUnixPath = os.platform() === 'win32' ? (str) => str.replace(/\\/g, '/') : (str) => str
+
 const loggerGet = debug('teremock:storage:get')
 const loggerSet = debug('teremock:storage:set')
 const loggerHas = debug('teremock:storage:has')
 
 export const getFileName = ({ wd, mockId }: { wd: string; mockId: string }): string => {
-  return path.resolve(wd, mockId.replace('--', path.sep) + '.json')
+  return pathToUnixPath(path.resolve(wd, mockId.replace('--', path.sep) + '.json'))
 }
 
 type ConstructParams = {

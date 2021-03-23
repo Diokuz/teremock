@@ -6,6 +6,8 @@ export type Request = {
   headers?: Headers
   body?: string | Record<string, any>
   resourceType: string
+  id: number
+  timestamp: number
 }
 
 export type ArgRequest = Request & { query: Record<string, string> }
@@ -19,6 +21,7 @@ export type Response = {
   // 2. It makes impossible simultaneous use of response.ttfb and options.response.ttfb
   ttfb?: number | number[]
   body?: string | Record<string, any>
+  timestamp: number
 }
 
 export type GetMockIdParams = {
@@ -138,10 +141,17 @@ export interface Driver {
   onClose: (fn: any) => Function
 }
 
+export type RequestTimeInfo = {
+  requestTimestamp: number
+  responseTimestamp?: number
+  requestId: number
+}
+
 export type Spy = {
   called: boolean
   calledOnce: boolean
   callCount: number
   dismiss: () => void
+  events: RequestTimeInfo[]
 }
 export type SpyTuple = [Interceptor, Spy]
