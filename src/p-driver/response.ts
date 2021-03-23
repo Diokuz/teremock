@@ -47,7 +47,6 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     status: puppeteerResponse.status(),
     headers: puppeteerResponse.headers(),
     body: responseBody,
-    requestId: teremockRequest ? teremockRequest.id : -1,
     timestamp
     // ttfb: timestamp - puppeteerRequest.timestamp,
   }

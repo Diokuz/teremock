@@ -21,7 +21,6 @@ export type Response = {
   // 2. It makes impossible simultaneous use of response.ttfb and options.response.ttfb
   ttfb?: number | number[]
   body?: string | Record<string, any>
-  requestId: number
   timestamp: number
 }
 
@@ -153,6 +152,6 @@ export type Spy = {
   calledOnce: boolean
   callCount: number
   dismiss: () => void
-  requestsLog: RequestTimeInfo[]
+  events: RequestTimeInfo[]
 }
 export type SpyTuple = [Interceptor, Spy]
