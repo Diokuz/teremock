@@ -39,7 +39,7 @@ export async function extractPuppeteerResponse(puppeteerResponse, options): Prom
     resourceType: puppeteerRequest.resourceType(),
     id: teremockRequest ? teremockRequest.id : -1,
     timestamp: teremockRequest ? teremockRequest.timestamp : 0,
-    order: teremockRequest ? teremockRequest.order : -1
+    order: teremockRequest ? teremockRequest.order : -1,
   }
 
   const response: Response = {
@@ -48,7 +48,7 @@ export async function extractPuppeteerResponse(puppeteerResponse, options): Prom
     headers: puppeteerResponse.headers(),
     body: responseBody,
     timestamp: options.timestamp,
-    order: options.order
+    order: options.order,
     // ttfb: timestamp - puppeteerRequest.timestamp,
   }
 

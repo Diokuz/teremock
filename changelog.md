@@ -1,3 +1,7 @@
+## 1.7.0
+
+- Add request and response `order` incremental mark for debug
+
 ## 1.6.0
 
 - Add request id and request/response timestamps (see also spy.events)

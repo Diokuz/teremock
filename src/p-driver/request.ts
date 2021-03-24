@@ -15,7 +15,7 @@ export async function extractPuppeteerRequest(puppeteerRequest, options): Promis
     resourceType: puppeteerRequest.resourceType(),
     id: requestsCounter++,
     timestamp: options.timestamp,
-    order: options.order
+    order: options.order,
   }
 
   puppeteerRequest.timestamp = options.timestamp
