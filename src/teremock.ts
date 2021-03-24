@@ -71,10 +71,11 @@ class Teremock {
           spy.called = true
           spy.callCount++
           spy.calledOnce = spy.callCount === 1
-          const { requestId, requestTimestamp } = req
+          const { requestId, requestTimestamp, requestOrder } = req
           if (requestId !== -1) {
             spy.events.push({
               requestTimestamp,
+              requestOrder,
               requestId
             })
           }
@@ -83,15 +84,15 @@ class Teremock {
     }
   }
   private _onAnyReqEnd(req) {
-    this._resolveReqs(req)
     if (this._spies.length > 0) {
       this._spies.forEach(([interceptor, spy]) => {
         if (isInterceptorMatched(interceptor, req)) {
-          const { requestId, responseTimestamp } = req
+          const { requestId, responseTimestamp, responseOrder } = req
           if (requestId !== -1) {
             const requestObj = spy.events.find(obj => obj.requestId === requestId)
             if (requestObj) {
               requestObj.responseTimestamp = responseTimestamp
+              requestObj.responseOrder = responseOrder
             }
           }
         }
@@ -163,7 +164,8 @@ class Teremock {
       interceptors: this._interceptors,
       storage: this.storage,
       reqSet: this.reqSet,
-      _onReqsCompleted: (req) => this._onAnyReqEnd(req),
+      _onReqCompleted: (req) => this._onAnyReqEnd(req),
+      _onReqsCompleted: () => this._resolveReqs(),
       _onReqsReject: (...args) => this._rejectReqs(...args),
     })
 

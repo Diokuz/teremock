@@ -6,6 +6,7 @@ const logger = debug('teremock:response')
 
 type Params = Options & {
   reqSet: Set<string>
+  _onReqCompleted: Function
   _onReqsCompleted: Function
   storage: Storage
 }
@@ -65,8 +66,8 @@ export default function createHandler(initialParams) {
     } else {
       loggerTrace(`${request.url} → storing mock ${mockId}`)
       mog(`« preparing to set a new mock "${mockId}"`)
-      const { timestamp: _x, id, ...mockRequest } = request
-      const { timestamp: _y, ...mockResponse } = response
+      const { timestamp: _x, order: _z, id, ...mockRequest } = request
+      const { timestamp: _y, order: _k, ...mockResponse } = response
 
       await storage.set(mockId, { request: mockRequest, response: mockResponse })
     }
@@ -74,11 +75,14 @@ export default function createHandler(initialParams) {
     reqSet.delete(mockId)
     mog('« reqSet after delete is', Array.from(reqSet))
 
+    const { id, timestamp, order, ...rest } = request
+
+    params._onReqCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
+
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')
-      const { id, timestamp, ...rest } = request
 
-      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, responseTimestamp: pResponse.timestamp})
+      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
     }
   }
 }

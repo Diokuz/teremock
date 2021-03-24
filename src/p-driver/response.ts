@@ -4,7 +4,7 @@ import signale from '../logger'
 
 const logger = debug('teremock:driver:puppeteer:response')
 
-export async function extractPuppeteerResponse(puppeteerResponse): Promise<DriverResponse> {
+export async function extractPuppeteerResponse(puppeteerResponse, options): Promise<DriverResponse> {
   const puppeteerRequest = puppeteerResponse.request()
 
   let requestBody: string | Record<string, any>
@@ -29,7 +29,6 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     requestBody = puppeteerRequest.postData()
   }
 
-  const timestamp = Date.now()
   const { teremockRequest } = puppeteerRequest
 
   const request: Request = {
@@ -40,6 +39,7 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     resourceType: puppeteerRequest.resourceType(),
     id: teremockRequest ? teremockRequest.id : -1,
     timestamp: teremockRequest ? teremockRequest.timestamp : 0,
+    order: teremockRequest ? teremockRequest.order : -1
   }
 
   const response: Response = {
@@ -47,7 +47,8 @@ export async function extractPuppeteerResponse(puppeteerResponse): Promise<Drive
     status: puppeteerResponse.status(),
     headers: puppeteerResponse.headers(),
     body: responseBody,
-    timestamp,
+    timestamp: options.timestamp,
+    order: options.order
     // ttfb: timestamp - puppeteerRequest.timestamp,
   }
 

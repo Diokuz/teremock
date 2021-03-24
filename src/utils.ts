@@ -7,6 +7,7 @@ import defaultGetMockId from './mock-id'
 
 const loggerint = debug('teremock:utils:interceptor')
 export const loggerTrace = debug('teremock:trace')
+let orderCounter = 0
 
 export function assignResponse(response1: Response, response2?: Partial<Response>): Response {
   return {
@@ -22,6 +23,13 @@ export function assignResponse(response1: Response, response2?: Partial<Response
 type InParams = {
   interceptors: Record<string, Interceptor>
   request: Request
+}
+
+export const getTimeStampWithStrictOrder = () => {
+  return {
+    timestamp: Date.now(),
+    order: ++orderCounter
+  }
 }
 
 export const isInterceptorMatched = (interceptor: Interceptor, request: Request) => {
