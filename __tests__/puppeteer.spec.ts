@@ -373,8 +373,8 @@ describe('teremock', () => {
       await page.click('#button')
       await sleep(35)
       expect(spy.events.length).toBe(1)
-      const { requestTimestamp, responseTimestamp } = spy.events[0]
-      expect(responseTimestamp && responseTimestamp.orderMark > requestTimestamp.orderMark).toBe(true)
+      const { requestOrder, responseOrder } = spy.events[0]
+      expect(responseOrder && responseOrder > requestOrder).toBe(true)
       await teremock.stop()
     })
 

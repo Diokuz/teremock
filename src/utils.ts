@@ -25,10 +25,10 @@ type InParams = {
   request: Request
 }
 
-export const getHighResTimestamp = () => {
+export const getTimeStampWithStrictOrder = () => {
   return {
-    time: Date.now(),
-    orderMark: ++orderCounter
+    timestamp: Date.now(),
+    order: ++orderCounter
   }
 }
 

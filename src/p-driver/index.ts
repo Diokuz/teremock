@@ -2,7 +2,7 @@ import { extractPuppeteerRequest } from './request'
 import { extractPuppeteerResponse } from './response'
 import { Driver, OnRequestHandler, OnResponseHandler } from '../types'
 import logger from '../logger'
-import { loggerTrace, getHighResTimestamp } from '../utils'
+import { loggerTrace, getTimeStampWithStrictOrder } from '../utils'
 
 /**
  * There is no valid reason to have more than one driver instances per page
@@ -41,10 +41,10 @@ class PuppeteerDriver implements Driver {
 
   public onRequest(fn: OnRequestHandler) {
     const handler = async (interceptedRequest) => {
-      const timestamp = getHighResTimestamp()
+      const timestampWithOrder = getTimeStampWithStrictOrder()
       loggerTrace(`${interceptedRequest.url()} ← page.on('request') fired`)
 
-      const { request, abort, next, respond } = await extractPuppeteerRequest(interceptedRequest, timestamp)
+      const { request, abort, next, respond } = await extractPuppeteerRequest(interceptedRequest, timestampWithOrder)
 
       fn({ request, abort, next, respond })
     }
@@ -61,12 +61,12 @@ class PuppeteerDriver implements Driver {
 
   public onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
-      const timestamp = getHighResTimestamp()
+      const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()
 
       loggerTrace(`${url} → page.on('response') fired`)
 
-      await fn(await extractPuppeteerResponse(interceptedResponse, timestamp))
+      await fn(await extractPuppeteerResponse(interceptedResponse, timestampWithOrder))
 
       loggerTrace(`${url} → finish`)
     }

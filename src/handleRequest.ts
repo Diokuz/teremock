@@ -123,7 +123,7 @@ export default function createHandler(initialParams) {
       return
     }
 
-    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body, headers: request.headers, requestId: request.id, requestTimestamp: request.timestamp })
+    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body, headers: request.headers, requestId: request.id, requestTimestamp: request.timestamp, requestOrder: request.order })
     reqSet.add(mockId)
     mog('» reqSet is', Array.from(reqSet.get()))
 

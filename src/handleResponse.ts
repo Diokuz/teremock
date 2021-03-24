@@ -75,14 +75,14 @@ export default function createHandler(initialParams) {
     reqSet.delete(mockId)
     mog('« reqSet after delete is', Array.from(reqSet))
 
-    const { id, timestamp, ...rest } = request
+    const { id, timestamp, order, ...rest } = request
 
-    params._onReqCompleted({...rest, requestId: id, requestTimestamp: timestamp, responseTimestamp: pResponse.timestamp})
+    params._onReqCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
 
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')
 
-      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, responseTimestamp: pResponse.timestamp})
+      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
     }
   }
 }

@@ -6,7 +6,7 @@ const logger = debug('teremock:driver:puppeteer:request')
 
 let requestsCounter: number = 0
 
-export async function extractPuppeteerRequest(puppeteerRequest, timestamp): Promise<DriverRequest> {
+export async function extractPuppeteerRequest(puppeteerRequest, options): Promise<DriverRequest> {
   const request: Request = {
     url: puppeteerRequest.url(),
     method: puppeteerRequest.method(),
@@ -14,10 +14,11 @@ export async function extractPuppeteerRequest(puppeteerRequest, timestamp): Prom
     body: puppeteerRequest.postData(),
     resourceType: puppeteerRequest.resourceType(),
     id: requestsCounter++,
-    timestamp,
+    timestamp: options.timestamp,
+    order: options.order
   }
 
-  puppeteerRequest.timestamp = Date.now()
+  puppeteerRequest.timestamp = options.timestamp
   puppeteerRequest.teremockRequest = request
   puppeteerRequest.__meta = { request }
 

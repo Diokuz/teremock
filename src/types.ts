@@ -8,6 +8,7 @@ export type Request = {
   resourceType: string
   id?: number
   timestamp?: number
+  order?: number
 }
 
 export type ArgRequest = Request & { query: Record<string, string> }
@@ -22,6 +23,7 @@ export type Response = {
   ttfb?: number | number[]
   body?: string | Record<string, any>
   timestamp?: number
+  order?: number
 }
 
 export type GetMockIdParams = {
@@ -141,14 +143,11 @@ export interface Driver {
   onClose: (fn: any) => Function
 }
 
-export type TimeStampWithStrictOrder = {
-  time: number,
-  orderMark: number
-}
-
-export type RequestTimeInfo = {
-  requestTimestamp: TimeStampWithStrictOrder
-  responseTimestamp?: TimeStampWithStrictOrder
+export type EventInfo = {
+  requestTimestamp: number
+  responseTimestamp?: number
+  requestOrder: number
+  responseOrder?: number
   requestId: number
 }
 
@@ -157,6 +156,6 @@ export type Spy = {
   calledOnce: boolean
   callCount: number
   dismiss: () => void
-  events: RequestTimeInfo[]
+  events: EventInfo[]
 }
 export type SpyTuple = [Interceptor, Spy]
