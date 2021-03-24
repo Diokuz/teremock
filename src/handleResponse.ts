@@ -66,8 +66,8 @@ export default function createHandler(initialParams) {
     } else {
       loggerTrace(`${request.url} → storing mock ${mockId}`)
       mog(`« preparing to set a new mock "${mockId}"`)
-      const { timestamp: _x, id, ...mockRequest } = request
-      const { timestamp: _y, ...mockResponse } = response
+      const { timestamp: _x, order: _z, id, ...mockRequest } = request
+      const { timestamp: _y, order: _k, ...mockResponse } = response
 
       await storage.set(mockId, { request: mockRequest, response: mockResponse })
     }
