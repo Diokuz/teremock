@@ -4,7 +4,7 @@ import { Request, Response, Options, UserOptions, Interceptor, UserInterceptor }
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 import { humanize } from './words-hash'
 import defaultGetMockId from './mock-id'
-import { checkObjectsDifference } from './check-objects-difference'
+import isMatch from 'lodash.ismatch'
 
 const loggerint = debug('teremock:utils:interceptor')
 const loggerBody = debug('teremock:utils:bodymatched')
@@ -120,13 +120,13 @@ export function isBodyMatched(value, request: Request) {
     return true
   }
 
-  const { tree, isDifferent } = checkObjectsDifference(value, formData)
+  const objectsIsMatch = isMatch(value, formData)
 
-  if (isDifferent) {
-    loggerBody('Body not matched. Difference tree', tree)
+  if (!objectsIsMatch) {
+    loggerBody('Body not matched. Request body: ', formData)
   }
 
-  return !isDifferent
+  return objectsIsMatch
 }
 
 export function getFormData(body) {
