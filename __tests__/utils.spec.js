@@ -209,10 +209,28 @@ describe('isBodyMatched', () => {
         expect(isBodyMatched({"foo": {"bar":"baz", "arr": [{ "keyOne": "12345678", "keyFour": [1] }, { "keyTwo": "987654321", "keyFive": [2] }, { "keyTree": "123654789" }]}}, requestDeepBody)).toEqual(true)
       })
       it('body not matched', () => {
-        expect(isBodyMatched({"foo": {"bar":"baz", "arr": [{ "keyTree": "123654789" }]}}, requestDeepBody)).toEqual(false)
+        expect(isBodyMatched({"foo": {"bar":"baz", "arr": [{ "keyOne": "12345678", "keyFour": [1] }, { "keyTwo": "987654321", "keyFive": [2] }, { "keyTree": "1236547892" }]}}, requestDeepBody)).toEqual(false)
       })
       it('body not matched in array element', () => {
         expect(isBodyMatched({"foo": {"arr": [{ "keyOne": "12345678", "keyFour": [2] }, { "keyTwo": "987654321", "keyFive": [4, 2] }, { "keyTree": "123654789" }]}}, requestDeepBody)).toEqual(false)
+      })
+    })
+    describe('body is deep object - not all keys in spy body', () => {
+      let requestDeepBody = {
+        ...request,
+        body: JSON.stringify({ foo: { bar: 'baz', data: {test: "data"} }, bar: 1 }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+      it('body matched 1', () => {
+        expect(isBodyMatched({ foo: { data: { test: "data" } } }, requestDeepBody)).toEqual(true)
+      })
+      it('body matched 2', () => {
+        expect(isBodyMatched({ bar: 1 }, requestDeepBody)).toEqual(true)
+      })
+      it('body not matched', () => {
+        expect(isBodyMatched({ foo: { data: { test: "data2" } } }, requestDeepBody)).toEqual(false)
       })
     })
   })
