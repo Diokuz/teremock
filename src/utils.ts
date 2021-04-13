@@ -120,7 +120,7 @@ export function isBodyMatched(value, request: Request) {
     return true
   }
 
-  const objectsIsMatch = isMatch(value, formData)
+  const objectsIsMatch = isMatch(formData, value)
 
   if (!objectsIsMatch) {
     loggerBody('Body not matched. Request body: ', formData)
