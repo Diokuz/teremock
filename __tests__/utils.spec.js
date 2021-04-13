@@ -1,4 +1,13 @@
-const { findInterceptor, getQuery, getFormData, isInterceptorMatched, blacklist, userOptionsToOptions, userInterceptorToInterceptor, isBodyMatched } = require('../src/utils')
+const {
+  findInterceptor,
+  getQuery,
+  getFormData,
+  isInterceptorMatched,
+  blacklist,
+  userOptionsToOptions,
+  userInterceptorToInterceptor,
+  isBodyMatched,
+} = require('../src/utils')
 const { DEFAULT_OPTIONS, DEFAULT_INTERCEPTOR_CAPTURE, DEFAULT_INTERCEPTOR_PASS } = require('../src/consts')
 
 describe('findInterceptor', () => {
@@ -34,7 +43,7 @@ describe('findInterceptor', () => {
     const interceptor = DEFAULT_OPTIONS.interceptors.capture
     const one = { ...interceptor }
     const two = { ...interceptor }
-    const request = { url: 'http://example.com', method: 'get'}
+    const request = { url: 'http://example.com', method: 'get' }
     const found = findInterceptor({ interceptors: { one, two }, request })
 
     expect(found).toBe(one)
@@ -43,9 +52,9 @@ describe('findInterceptor', () => {
   it('mismatched method', () => {
     const interceptor = {
       url: 'example.com',
-      methods: new Set(['post'])
+      methods: new Set(['post']),
     }
-    const request = { url: 'http://example.com', method: 'get'}
+    const request = { url: 'http://example.com', method: 'get' }
     const found = findInterceptor({ interceptors: { interceptor }, request })
 
     expect(found).toBeNull()
@@ -54,9 +63,9 @@ describe('findInterceptor', () => {
   it('url matched partially (no protocol)', () => {
     const interceptor = {
       url: 'example.com',
-      methods: new Set(['get'])
+      methods: new Set(['get']),
     }
-    const request = { url: 'http://example.com', method: 'get'}
+    const request = { url: 'http://example.com', method: 'get' }
     const found = findInterceptor({ interceptors: { interceptor }, request })
 
     expect(found).toBe(interceptor)
@@ -65,9 +74,9 @@ describe('findInterceptor', () => {
   it('url matched partially (no path)', () => {
     const interceptor = {
       url: 'example.com',
-      methods: new Set(['get'])
+      methods: new Set(['get']),
     }
-    const request = { url: 'http://example.com/path/to/api', method: 'get'}
+    const request = { url: 'http://example.com/path/to/api', method: 'get' }
     const found = findInterceptor({ interceptors: { interceptor }, request })
 
     expect(found).toBe(interceptor)
@@ -76,9 +85,9 @@ describe('findInterceptor', () => {
   it('url matched partially (query in url)', () => {
     const interceptor = {
       url: 'example.com',
-      methods: new Set(['get'])
+      methods: new Set(['get']),
     }
-    const request = { url: 'http://example.com/path/to/api?foo=bar&baz=q', method: 'get'}
+    const request = { url: 'http://example.com/path/to/api?foo=bar&baz=q', method: 'get' }
     const found = findInterceptor({ interceptors: { interceptor }, request })
 
     expect(found).toBe(interceptor)
@@ -120,14 +129,14 @@ describe('getQuery', () => {
 
 describe('getFormData', () => {
   it('parse formData body', () => {
-    expect(getFormData('foo=bar')).toEqual({foo: 'bar'})
+    expect(getFormData('foo=bar')).toEqual({ foo: 'bar' })
   })
   it('duplicates ignored', () => {
-    expect(getFormData('foo=bar&foo=baz')).toEqual({foo: 'baz'})
+    expect(getFormData('foo=bar&foo=baz')).toEqual({ foo: 'baz' })
   })
   it('decode utf8', () => {
     expect(getFormData('agreement=1&name=%D0%9F%D1%80%D0%B8%3D%D1%84'))
-      .toEqual({agreement: '1', name: 'При=ф'})
+      .toEqual({ agreement: '1', name: 'При=ф' })
   })
 })
 
@@ -139,27 +148,72 @@ describe('isBodyMatched', () => {
   }
 
   describe('application/json', () => {
-    request = {
-      ...request,
-      body: '{"foo":"bar"}',
-      headers: {
-        'content-type': 'application/json'
-      }
-    }
-    it('empty body', () => {
-      expect(isBodyMatched({}, request)).toEqual(true)
-    })
-    it('body matched', () => {
-      expect(isBodyMatched({foo: 'bar'}, request)).toEqual(true)
-    })
-    it('body not matched', () => {
-      expect(isBodyMatched({foo: 'baz'}, request)).toEqual(false)
-    })
-    it('invalid body', () => {
-      expect(isBodyMatched({foo: 'bar'}, {
+    describe('body is not deep object', () => {
+      let requestNotDeepBody = {
         ...request,
-        body: '',
-      })).toEqual(false)
+        body: '{"foo":"bar"}',
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+      it('empty body', () => {
+        expect(isBodyMatched({}, requestNotDeepBody)).toEqual(true)
+      })
+      it('body matched', () => {
+        expect(isBodyMatched({ foo: 'bar' }, requestNotDeepBody)).toEqual(true)
+      })
+      it('body not matched', () => {
+        expect(isBodyMatched({ foo: 'baz' }, requestNotDeepBody)).toEqual(false)
+      })
+      it('invalid body', () => {
+        expect(isBodyMatched({ foo: 'bar' }, {
+          ...requestNotDeepBody,
+          body: '',
+        })).toEqual(false)
+      })
+    })
+
+    describe('body is deep object', () => {
+      let requestDeepBody = {
+        ...request,
+        body: '{"foo": {"bar":"baz"}}',
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+      it('empty body', () => {
+        expect(isBodyMatched({}, requestDeepBody)).toEqual(true)
+      })
+      it('body matched', () => {
+        expect(isBodyMatched({ foo: { bar: 'baz' } }, requestDeepBody)).toEqual(true)
+      })
+      it('body not matched', () => {
+        expect(isBodyMatched({ foo: { baz: 'bar' } }, requestDeepBody)).toEqual(false)
+      })
+      it('invalid body', () => {
+        expect(isBodyMatched({ foo: { bar: 'baz' } }, {
+          ...requestDeepBody,
+          body: '',
+        })).toEqual(false)
+      })
+    })
+    describe('body is deep object with array', () => {
+      let requestDeepBody = {
+        ...request,
+        body: '{"foo": {"bar":"baz", "arr": [{ "keyOne": "12345678", "keyFour": [1] }, { "keyTwo": "987654321", "keyFive": [2] }, { "keyTree": "123654789" }]}}',
+        headers: {
+          'content-type': 'application/json',
+        },
+      }
+      it('body matched', () => {
+        expect(isBodyMatched({"foo": {"bar":"baz", "arr": [{ "keyOne": "12345678", "keyFour": [1] }, { "keyTwo": "987654321", "keyFive": [2] }, { "keyTree": "123654789" }]}}, requestDeepBody)).toEqual(true)
+      })
+      it('body not matched', () => {
+        expect(isBodyMatched({"foo": {"bar":"baz", "arr": [{ "keyTree": "123654789" }]}}, requestDeepBody)).toEqual(false)
+      })
+      it('body not matched in array element', () => {
+        expect(isBodyMatched({"foo": {"arr": [{ "keyOne": "12345678", "keyFour": [2] }, { "keyTwo": "987654321", "keyFive": [4, 2] }, { "keyTree": "123654789" }]}}, requestDeepBody)).toEqual(false)
+      })
     })
   })
   describe('application/x-www-form-urlencoded', () => {
@@ -167,17 +221,17 @@ describe('isBodyMatched', () => {
       ...request,
       body: 'foo=bar',
       headers: {
-        'content-type': 'application/x-www-form-urlencoded'
-      }
+        'content-type': 'application/x-www-form-urlencoded',
+      },
     }
     it('empty body', () => {
       expect(isBodyMatched({}, request)).toEqual(true)
     })
     it('body matched', () => {
-      expect(isBodyMatched({foo: 'bar'}, request)).toEqual(true)
+      expect(isBodyMatched({ foo: 'bar' }, request)).toEqual(true)
     })
     it('body not matched', () => {
-      expect(isBodyMatched({foo: 'baz'}, request)).toEqual(false)
+      expect(isBodyMatched({ foo: 'baz' }, request)).toEqual(false)
     })
   })
 })
@@ -260,8 +314,8 @@ describe('userOptionsToOptions', () => {
     }
     const options = userOptionsToOptions(DEFAULT_OPTIONS, {
       interceptors: {
-        api: apiMock
-      }
+        api: apiMock,
+      },
     })
 
     expect(options).toEqual({

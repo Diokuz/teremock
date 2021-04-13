@@ -1,6 +1,6 @@
 {
   "name": "teremock",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Easy to use test request mocker for puppeteer / mocha / karma",
   "main": "dist",
   "repository": {
@@ -25,6 +25,7 @@
   "dependencies": {
     "debug": "^4.2.0",
     "is-ci": "^2.0.0",
+    "lodash.ismatch": "^4.4.0",
     "make-dir": "^3.1.0",
     "query-string": "^6.13.6",
     "signale": "^1.4.0",

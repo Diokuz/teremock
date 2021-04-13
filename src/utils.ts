@@ -4,8 +4,10 @@ import { Request, Response, Options, UserOptions, Interceptor, UserInterceptor }
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 import { humanize } from './words-hash'
 import defaultGetMockId from './mock-id'
+import isMatch from 'lodash.ismatch'
 
 const loggerint = debug('teremock:utils:interceptor')
+const loggerBody = debug('teremock:utils:bodymatched')
 export const loggerTrace = debug('teremock:trace')
 let orderCounter = 0
 
@@ -28,7 +30,7 @@ type InParams = {
 export const getTimeStampWithStrictOrder = () => {
   return {
     timestamp: Date.now(),
-    order: ++orderCounter
+    order: ++orderCounter,
   }
 }
 
@@ -101,7 +103,7 @@ export function isBodyMatched(value, request: Request) {
   }
   let formData = {}
   if (headers['content-type'] === 'application/x-www-form-urlencoded') {
-      formData = getFormData(request.body)
+    formData = getFormData(request.body)
   } else if (
     headers['content-type'] === 'application/json'
     && typeof request.body === 'string'
@@ -112,10 +114,19 @@ export function isBodyMatched(value, request: Request) {
       return false
     }
   }
-  return (Object.keys(value).reduce((a, k) => {
-      // won't work with nested objects
-      return a && value[k] === formData[k]
-  }, true))
+
+  // If body in UserInterceptor is empty - is considered equal
+  if (!Object.keys(value).length) {
+    return true
+  }
+
+  const objectsIsMatch = isMatch(value, formData)
+
+  if (!objectsIsMatch) {
+    loggerBody('Body not matched. Request body: ', formData)
+  }
+
+  return objectsIsMatch
 }
 
 export function getFormData(body) {
@@ -174,7 +185,7 @@ export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg?: st
         url: '<unknown>',
         status: 200,
         ...uint.response,
-      }
+      },
     }
   }
 

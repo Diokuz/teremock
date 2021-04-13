@@ -1,3 +1,7 @@
+## 1.8.0
+
+- Request body matcher now uses lodash.isMatch, which support nested properties
+
 ## 1.7.0
 
 - Add request and response `order` incremental mark for debug
