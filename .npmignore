@@ -4,6 +4,7 @@ __tests__
 .pnp
 .pnp.js
 __teremocks__
+__teremocks-playwright__
 __teremocks-post__
 yarn.lock
 Makefile
