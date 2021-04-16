@@ -16,7 +16,7 @@ async function sleep(time) {
 
 let server
 
-describe('teremock', () => {
+describe('teremock puppeteer', () => {
   let page
   let browser
 

@@ -4,7 +4,7 @@ export type Request = {
   url: string
   method: string
   headers?: Headers
-  body?: string | Record<string, any>
+  body?: string | Record<string, any> | null
   resourceType: string
   id?: number
   timestamp?: number

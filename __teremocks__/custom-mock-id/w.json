@@ -12,9 +12,10 @@
     "url": "http://localhost:3000/api?q=w",
     "status": 200,
     "headers": {
+      "content-type": "application/json; charset=utf-8",
       "access-control-allow-origin": "*",
       "connection": "keep-alive",
-      "content-type": "application/json; charset=utf-8"
+      "keep-alive": "timeout=5"
     },
     "body": {
       "suggest": "w"

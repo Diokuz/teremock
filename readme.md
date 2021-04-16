@@ -1,8 +1,21 @@
+> Now with Playwright support!
+
 # teremock
 
 ## Do I need teremock?
 
-If you write puppeteer / mocha / karma tests, and you want to mock your network responses easily – probably yes.
+If you write puppeteer / playwright / karma tests, and you want to mock your network responses easily – probably yes.
+
+## How to use with playwright (experimental)
+
+```js
+import { Teremock, PlaywrightDriver } from 'teremock'
+
+const teremock = new Teremock({ driver: new PlaywrightDriver({ page }) })
+await teremock.start({ page })
+
+// async stuff which is making requests, including redirects
+```
 
 ## How to use with puppeteer
 

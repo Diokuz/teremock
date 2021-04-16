@@ -38,7 +38,7 @@ class Teremock {
   private _spies: SpyTuple[]
   private _interceptors: Record<string, Interceptor>
 
-  constructor(opts?: { storage: Storage, driver: Driver }) {
+  constructor(opts?: { storage?: Storage, driver?: Driver }) {
     signale.debug(`new Mocker`)
     this.defaultOptions = Object.assign({}, DEFAULT_OPTIONS)
 

@@ -1,7 +1,7 @@
 {
   "name": "teremock",
-  "version": "1.8.1",
-  "description": "Easy to use test request mocker for puppeteer / mocha / karma",
+  "version": "1.9.0",
+  "description": "Easy to use test request mocker for puppeteer / playwright / karma",
   "main": "dist",
   "repository": {
     "type": "git",
@@ -44,6 +44,8 @@
     "express": "^4.17.1",
     "got": "^11.8.0",
     "jest": "^26.6.1",
+    "jest-playwright-preset": "^1.5.1",
+    "playwright": "^1.10.0",
     "prettier": "2.1.2",
     "puppeteer": "^5.4.0",
     "rimraf": "^3.0.2",

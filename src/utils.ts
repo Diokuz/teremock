@@ -235,7 +235,7 @@ export function userOptionsToOptions(defaultOptions: Options, userOptions: UserO
 }
 
 // https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestrespondresponse
-export const getBody = (body: Object | string | undefined): string | undefined => {
+export const getBody = (body: Object | string | undefined | null): string | undefined => {
   if (typeof body === 'string' || typeof body === 'undefined') {
     return body
   }

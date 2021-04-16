@@ -38,6 +38,8 @@ export const DEFAULT_OPTIONS: Options = {
     'cache-control',
     'content-length',
     'server',
+    'sec-ch-ua',
+    'sec-ch-ua-mobile',
   ],
   // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
   ci: isCi, // Same behaviour as in Jest

@@ -1,3 +1,7 @@
+## 1.9.0
+
+- Add Playwright support
+
 ## 1.8.0
 
 - Request body matcher now uses lodash.isMatch, which support nested properties
