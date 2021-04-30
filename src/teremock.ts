@@ -172,13 +172,13 @@ class Teremock {
     logger('Handlers created, params validated')
 
     // Intercepting all requests and respinding with mocks
-    this.removeRequestHandler = this.driver.onRequest((ir) => pureRequestHandler(ir, {
+    this.removeRequestHandler = await this.driver.onRequest((ir) => pureRequestHandler(ir, {
       ...this.extraParams,
       interceptors: this._interceptors,
     }))
 
     // Writing mocks on real responses to filesystem
-    this.removeResponseHandler = this.driver.onResponse((ir) => pureResponseHandler(ir, {
+    this.removeResponseHandler = await this.driver.onResponse((ir) => pureResponseHandler(ir, {
       ...this.extraParams,
       interceptors: this._interceptors,
     }))

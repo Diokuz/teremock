@@ -39,7 +39,7 @@ class PuppeteerDriver implements Driver {
     await this.page.setRequestInterception(arg)
   }
 
-  public onRequest(fn: OnRequestHandler) {
+  public async onRequest(fn: OnRequestHandler) {
     const handler = async (interceptedRequest) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       loggerTrace(`${interceptedRequest.url()} ← page.on('request') fired`)
@@ -50,7 +50,7 @@ class PuppeteerDriver implements Driver {
     }
 
     // Intercepting all requests and respinding with mocks
-    this.page.on('request', handler)
+    await this.page.on('request', handler)
 
     return async () => {
       await this.setRequestInterception(false)
@@ -59,7 +59,7 @@ class PuppeteerDriver implements Driver {
     }
   }
 
-  public onResponse(fn: OnResponseHandler) {
+  public async onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()

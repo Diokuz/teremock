@@ -138,8 +138,8 @@ export type OnResponseHandler = (arg: DriverResponse) => Promise<void>
 
 export interface Driver {
   setRequestInterception: (switchOn: boolean) => void
-  onRequest: (fn: OnRequestHandler) => Function
-  onResponse: (fn: OnResponseHandler) => Function
+  onRequest: (fn: OnRequestHandler) => Promise<Function>
+  onResponse: (fn: OnResponseHandler) => Promise<Function>
   onClose: (fn: any) => Function
 }
 

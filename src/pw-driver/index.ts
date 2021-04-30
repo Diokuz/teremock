@@ -40,7 +40,7 @@ class PlaywrightDriver implements Driver {
     // do nothing for playwright
   }
 
-  public onRequest(fn: OnRequestHandler) {
+  public async onRequest(fn: OnRequestHandler) {
     const handler = (route) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       loggerTrace(`${route.request().url()} ← page.on('request') fired`)
@@ -50,15 +50,15 @@ class PlaywrightDriver implements Driver {
       fn({ request, abort, next, respond })
     }
 
-    this.page.route(() => true, handler)
+    await this.page.route(() => true, handler)
 
     return async () => {
       pagesSet.delete(this.page)
-      this.page.unroute(() => true, handler)
+      await this.page.unroute(() => true, handler)
     }
   }
 
-  public onResponse(fn: OnResponseHandler) {
+  public async onResponse(fn: OnResponseHandler) {
     const handler = async (interceptedResponse: Response) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()
@@ -71,7 +71,7 @@ class PlaywrightDriver implements Driver {
     }
 
     // Intercepting all requests and respinding with mocks
-    this.page.on('response', handler)
+    await this.page.on('response', handler)
 
     return () => this.page.off('response', handler)
   }
