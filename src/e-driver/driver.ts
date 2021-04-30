@@ -147,7 +147,7 @@ class ExpressDriver implements Driver {
     this.isActive = arg
   }
 
-  public onRequest(fn: OnRequestHandler) {
+  public async onRequest(fn: OnRequestHandler) {
     this.onRequestHandler = fn
 
     return async () => {
@@ -157,7 +157,7 @@ class ExpressDriver implements Driver {
     }
   }
 
-  public onResponse(fn: OnResponseHandler) {
+  public async onResponse(fn: OnResponseHandler) {
     this.onResponseHandler = fn
 
     return () => {
