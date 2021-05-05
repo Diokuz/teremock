@@ -1,3 +1,7 @@
+## 1.10.0
+
+- Add debug log for all matched request at `stop()`
+
 ## 1.9.0
 
 - Add Playwright support
