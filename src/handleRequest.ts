@@ -11,6 +11,7 @@ type Params = Options & {
   reqSet: { add: (x: string) => void; get: () => Set<string> }
   _onReqStarted: Function
   _onReqsReject: Function
+  _onMatch: (interceptor: Interceptor, req: any) => void
   storage: Storage
 }
 
@@ -90,7 +91,7 @@ export default function createHandler(initialParams) {
 
   return async function handleRequest({ request, abort, next, respond }, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { interceptors, storage, reqSet, ci, responseOverrides, getMockId } = params
+    const { interceptors, storage, reqSet, ci, responseOverrides, getMockId, _onMatch } = params
 
     const reqParams = { url: request.url, method: request.method, body: request.body, headers: request.headers }
 
@@ -110,6 +111,8 @@ export default function createHandler(initialParams) {
       abort('aborted')
       return
     }
+
+    _onMatch(interceptor, request)
 
     const mockId = getMockId({ ...request, naming: interceptor.naming, name: interceptor.name, body: getBody(request.body) })
     const mog = debug(`teremock:${mockId}`)

@@ -37,6 +37,7 @@ class Teremock {
   private _rejectReqs: Function
   private _spies: SpyTuple[]
   private _interceptors: Record<string, Interceptor>
+  private _matched: Map<string, string[]>
 
   constructor(opts?: { storage?: Storage, driver?: Driver }) {
     signale.debug(`new Mocker`)
@@ -46,6 +47,7 @@ class Teremock {
     this._interceptors = {}
     this._resolveReqs = noop
     this._rejectReqs = noop
+    this._matched = new Map()
     this.storage = opts?.storage ?? new FileStorage()
     this.driver = opts?.driver
   }
@@ -121,6 +123,7 @@ class Teremock {
     await this.driver.setRequestInterception(true)
     this._spies = []
     this._interceptors = this.options.interceptors
+    this._matched = new Map()
 
     const logParams = Object.assign({}, this.options)
     logger('Mocker starts with resulting params:', logParams)
@@ -157,6 +160,13 @@ class Teremock {
       },
       _onReqStarted: (req) => this._onAnyReqStart(req),
       _onReqsReject: (...args) => this._rejectReqs(...args),
+      _onMatch: (interceptor: Interceptor, req: any) => {
+        if (!this._matched.has(interceptor.name)) {
+          this._matched.set(interceptor.name, [])
+        }
+
+        this._matched.get(interceptor.name)?.push(req.url)
+      }
     })
 
     const pureResponseHandler = createResponseHandler({
@@ -338,6 +348,8 @@ class Teremock {
 
       throw failed
     }
+
+    logger('Interceptor names and matched urls', this._matched)
 
     logger(`about to exit from mocker.stop with resolve`)
   }
