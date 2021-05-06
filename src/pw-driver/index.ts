@@ -6,6 +6,7 @@ import { Driver, OnRequestHandler, OnResponseHandler } from '../types'
 import logger from '../logger'
 import { loggerTrace, getTimeStampWithStrictOrder } from '../utils'
 import { Response, Page } from 'playwright'
+import { URL } from 'url'
 
 /**
  * There is no valid reason to have more than one driver instances per page
@@ -72,7 +73,8 @@ class PlaywrightDriver implements Driver {
         // see https://playwright.dev/docs/api/class-page#pagerouteurl-handler
         // Because of the way the page.route method works, the following redirection will not be handled by it.
         const newLocation = interceptedResponse.headers().location
-        this.seenRedirects.set(newLocation, (this.seenRedirects.get(newLocation) || 0) + 1)
+        const destUrl = new URL(newLocation, url).toString()
+        this.seenRedirects.set(destUrl, (this.seenRedirects.get(destUrl) || 0) + 1)
         logger.debug(`Redirection to "${newLocation}" from "${url}" will not be handled.`)
       }
       if (this.seenRedirects.get(url)) {
