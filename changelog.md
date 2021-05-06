@@ -1,7 +1,8 @@
-## 1.10.1
+## 1.10.2
 
 - Add debug log for all matched request at `stop()`
 - Add options.onStop method
+- Fix https://github.com/Diokuz/teremock/issues/14
 
 ## 1.9.0
 

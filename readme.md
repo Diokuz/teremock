@@ -134,6 +134,7 @@ const options = {
 
   onStop: ({ matched }) => {
     // `matched` contains data about all urls and matched interceptors since last `start()`
+    // example: Map(1) { interceptorName => 'http://localhost:3000/api?q=x' }
   }
 }
 ```
