@@ -130,6 +130,10 @@ const options = {
     // Could be usefull when find flaky tests and race conditions
     // In this example, all requests (first 10) will work as a stack, not as a queue
     ttfb: [900, 800, 700, 600, 500, 400, 300, 200, 100, 0]
+  },
+
+  onStop: ({ matched }) => {
+    // `matched` contains data about all urls and matched interceptors since last `start()`
   }
 }
 ```

@@ -103,6 +103,7 @@ export type Options = {
   getMockId: (arg: GetMockIdParams) => string
   responseOverrides?: Partial<Response>
   wd?: string | string[]
+  onStop?: (arg: { matched: Map<string, string[]> }) => void
 }
 
 export type UserOptions = {

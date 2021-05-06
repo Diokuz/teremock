@@ -1,6 +1,7 @@
-## 1.10.0
+## 1.10.1
 
 - Add debug log for all matched request at `stop()`
+- Add options.onStop method
 
 ## 1.9.0
 

@@ -350,6 +350,7 @@ class Teremock {
     }
 
     logger('Interceptor names and matched urls', this._matched)
+    this.options.onStop?.({ matched: this._matched })
 
     logger(`about to exit from mocker.stop with resolve`)
   }
