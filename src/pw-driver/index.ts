@@ -12,8 +12,11 @@ import { Response, Page } from 'playwright'
  */
 const pagesSet = new Set()
 
+const redirectCodes = [301, 302, 303, 305, 307, 308]
+
 class PlaywrightDriver implements Driver {
   private page: Page
+  private seenRedirects: Map<string, number>
 
   constructor({ page }: { page: Page }) {
     logger.debug(`instantiating new playwright driver`)
@@ -27,6 +30,8 @@ class PlaywrightDriver implements Driver {
       logger.error(`(probably you did not stop the mocker before start it again)`)
       throw new Error(`second driver instantiation on the same page`)
     }
+
+    this.seenRedirects = new Map()
 
     this.page = page
     pagesSet.add(page)
@@ -62,6 +67,18 @@ class PlaywrightDriver implements Driver {
     const handler = async (interceptedResponse: Response) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()
+
+      if (redirectCodes.indexOf(interceptedResponse.status()) !== -1) {
+        // see https://playwright.dev/docs/api/class-page#pagerouteurl-handler
+        // Because of the way the page.route method works, the following redirection will not be handled by it.
+        const newLocation = interceptedResponse.headers().location
+        this.seenRedirects.set(newLocation, (this.seenRedirects.get(newLocation) || 0) + 1)
+        logger.debug(`Redirection to "${newLocation}" from "${url}" will not be handled.`)
+      }
+      if (this.seenRedirects.get(url)) {
+        this.seenRedirects.set(url, this.seenRedirects.get(url)! - 1)
+        return
+      }
 
       loggerTrace(`${url} → page.on('response') fired`)
 

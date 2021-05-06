@@ -165,7 +165,7 @@ class Teremock {
           this._matched.set(interceptor.name, [])
         }
 
-        this._matched.get(interceptor.name)?.push(req.url)
+        this._matched.get(interceptor.name)!.push(req.url)
       }
     })
 
