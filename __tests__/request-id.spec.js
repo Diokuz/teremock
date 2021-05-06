@@ -115,6 +115,28 @@ it('params from body.blacklist for request with content-type="application/json" 
   expect(name1).toBe(name2)
 })
 
+it('params from body.blacklist for request with content-type="application/json;charset=UTF-8" does not affects output name', () => {
+  const method = 'POST'
+  const naming = { body: { blacklist: ['foo'] } }
+  const headers = { 'content-type': 'application/json;charset=UTF-8' }
+  const name1 = getRequestId({
+    url: 'http://example.com',
+    method,
+    headers,
+    body: JSON.stringify({ foo: 'bar', x: 2 }),
+    naming
+  })
+  const name2 = getRequestId({
+    url: 'http://example.com',
+    method,
+    headers,
+    body: JSON.stringify({ foo: 'bazzzz', x: 2 }),
+    naming
+  })
+
+  expect(name1).toBe(name2)
+})
+
 it('params out of the body.whitelist with content-type="application/json" does not affect output name', () => {
   const naming = { body: { whitelist: ['foo'] } }
   const headers = { 'content-type': 'application/json' }
