@@ -102,6 +102,7 @@ export interface Options {
   interceptors: Record<string, Interceptor>
   ci: boolean
   skipResponseHeaders: string[]
+  skipRequestHeaders: string[]
   awaitConnectionsOnStop: boolean
   getMockId: (arg: GetMockIdParams) => string
   responseOverrides?: Partial<Response>
@@ -115,6 +116,7 @@ export interface UserOptions {
   interceptors?: Record<string, UserInterceptor>
   getMockId?: (arg: GetMockIdParams) => string | undefined
   skipResponseHeaders?: string[]
+  skipRequestHeaders?: string[]
   responseOverrides?: Partial<Response>
 }
 

@@ -21,7 +21,7 @@ async function sleep(time: number) {
   })
 }
 
-type BeforeRespondArg = {
+export interface BeforeRespondArg {
   respond: (response: Response, interceptor: Interceptor) => void
   request: Request
   response: DefResponse

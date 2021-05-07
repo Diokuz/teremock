@@ -23,7 +23,7 @@ export default function createHandler(initialParams: Params) {
 
   return async function handleResponse({ request, response: pResponse, __meta }: Arg, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { storage, reqSet, ci, skipResponseHeaders, getMockId } = params
+    const { storage, reqSet, ci, skipResponseHeaders, skipRequestHeaders, getMockId } = params
 
     loggerTrace(`${request.url} → handling response`)
 
@@ -69,6 +69,10 @@ export default function createHandler(initialParams: Params) {
       mog(`« preparing to set a new mock "${mockId}"`)
       const { timestamp: _x, order: _z, id, ...mockRequest } = request
       const { timestamp: _y, order: _k, ...mockResponse } = response
+
+      if (mockRequest.headers) {
+        mockRequest.headers = blacklist(mockRequest.headers, skipRequestHeaders)
+      }
 
       await storage.set(mockId, { request: mockRequest, response: mockResponse })
     }
