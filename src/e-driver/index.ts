@@ -6,7 +6,7 @@ export const DEFAULT_WS_PORT = 27495
 
 class Tes {
   private socket: WebSocket
-  private send(method, data) {
+  private send(method: string, data: any) {
     this.socket.send(JSON.stringify({ method, data }))
   }
   private handle(str: string) {

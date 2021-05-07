@@ -22,12 +22,17 @@ export function assignResponse(response1: Response, response2?: Partial<Response
   }
 }
 
-type InParams = {
+export interface InParams {
   interceptors: Record<string, Interceptor>
   request: Request
 }
 
-export const getTimeStampWithStrictOrder = () => {
+export interface TimeStampWithStrictOrder {
+  timestamp: number
+  order: number
+}
+
+export const getTimeStampWithStrictOrder = (): TimeStampWithStrictOrder => {
   return {
     timestamp: Date.now(),
     order: ++orderCounter,
@@ -37,32 +42,32 @@ export const getTimeStampWithStrictOrder = () => {
 export const isInterceptorMatched = (interceptor: Interceptor, request: Request) => {
   const { url, method, resourceType = 'xhr' } = request
 
-  return Object.keys(interceptor).reduce<boolean>((acc, key) => {
+  return (Object.keys(interceptor) as Array<keyof Interceptor>).reduce<boolean>((acc, key) => {
     const value = interceptor[key]
 
     // Nothing to compare === wildcard (for given `key`)
-    if (typeof value === 'undefined' || value === '*' || (value?.has?.('*'))) {
+    if (typeof value === 'undefined' || value === '*' || ((value && value instanceof Set) && value.has('*'))) {
       return acc
     }
 
     switch (key) {
       case 'url':
-        return acc && url.includes(value)
+        return acc && url.includes(value as string)
       case 'methods':
-        return acc && value.has(method.toLowerCase())
+        return acc && (value as Set<string>).has(method.toLowerCase())
       case 'query':
         const query = getQuery(url)
 
         return (
           acc &&
-          Object.keys(value).reduce((a, k) => {
-            return a && value[k] === query[k]
-          }, true)
+          Object.keys(value as Record<string, any>).reduce((a, k) => {
+            return a && (value as Record<string, any>)[k] === query[k]
+          }, true as boolean)
         )
       case 'body':
         return acc && isBodyMatched(value, request)
       case 'resourceTypes':
-        return acc && value.has(resourceType.toLowerCase())
+        return acc && (value as Set<string>).has(resourceType.toLowerCase())
       default:
         return acc
     }
@@ -83,7 +88,7 @@ export const findInterceptor = ({ interceptors, request }: InParams): Intercepto
 }
 
 // duplicates are not supported
-export function getQuery(url) {
+export function getQuery(url: string): Record<string, string> {
   const urlObj = new URL(url)
   urlObj.searchParams.sort()
 
@@ -93,10 +98,10 @@ export function getQuery(url) {
     acc[key] = value
 
     return acc
-  }, {})
+  }, {} as Record<string, string>)
 }
 
-export function isBodyMatched(value, request: Request) {
+export function isBodyMatched(value: any, request: Request) {
   const { headers } = request
   if (!headers) {
     return false
@@ -129,17 +134,25 @@ export function isBodyMatched(value, request: Request) {
   return objectsIsMatch
 }
 
-export function getFormData(body) {
-  const params = body.split('&')
-  const result = {}
-  params.forEach(param => {
-    const paramsPart = param.split('=')
-    result[decodeURIComponent(paramsPart[0])] = decodeURIComponent(paramsPart[1])
-  })
+export function getFormData(body: Request['body']): Record<string, string> {
+  const result: Record<string, string> = {}
+  if (typeof body === 'string') {
+    const params = body.split('&')
+    params.forEach(param => {
+      const paramsPart = param.split('=')
+      result[decodeURIComponent(paramsPart[0])] = decodeURIComponent(paramsPart[1])
+    })
+  }
+
   return result
 }
 
-export function parseUrl(url) {
+export interface ParsedUrl {
+  query: Record<string, string>,
+  location: string,
+}
+
+export function parseUrl(url: string): ParsedUrl {
   const { origin, pathname } = new URL(url)
 
   return {
@@ -148,7 +161,7 @@ export function parseUrl(url) {
   }
 }
 
-export function blacklist(source: Record<string, string | string[]> | undefined, list: string[]): Record<string, string | string[]> | undefined {
+export function blacklist(source: Response['headers'] | undefined, list: string[]): Response['headers'] | undefined {
   if (typeof source === 'undefined') {
     return source
   }
@@ -161,7 +174,7 @@ export function blacklist(source: Record<string, string | string[]> | undefined,
     }
 
     return acc
-  }, {})
+  }, {} as Required<Response>['headers'])
 }
 
 export function userInterceptorToInterceptor(uint: UserInterceptor, nameArg?: string): Interceptor {
@@ -221,7 +234,6 @@ export function userOptionsToOptions(defaultOptions: Options, userOptions: UserO
 
   if (typeof userOptions.getMockId === 'function') {
     getMockId = (...args): string => {
-      // @ts-ignore WHY??
       return userOptions?.getMockId?.(...args) ?? defaultGetMockId(...args)
     }
   }

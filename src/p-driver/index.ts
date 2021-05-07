@@ -1,8 +1,10 @@
 import { extractPuppeteerRequest } from './request'
 import { extractPuppeteerResponse } from './response'
-import { Driver, OnRequestHandler, OnResponseHandler } from '../types'
 import logger from '../logger'
 import { loggerTrace, getTimeStampWithStrictOrder } from '../utils'
+
+import type { Driver, OnRequestHandler, OnResponseHandler } from '../types'
+import type { Request as PuppeteerRequest, Response as PuppeteerResponse, Page } from 'puppeteer'
 
 /**
  * There is no valid reason to have more than one driver instances per page
@@ -10,7 +12,7 @@ import { loggerTrace, getTimeStampWithStrictOrder } from '../utils'
 const pagesSet = new Set()
 
 class PuppeteerDriver implements Driver {
-  private page: any
+  private page: Page
 
   constructor({ page }: any) {
     logger.debug(`instantiating new driver`)
@@ -39,8 +41,8 @@ class PuppeteerDriver implements Driver {
     await this.page.setRequestInterception(arg)
   }
 
-  public async onRequest(fn: OnRequestHandler) {
-    const handler = async (interceptedRequest) => {
+  public async onRequest(fn: OnRequestHandler): Promise<() => Promise<void>> {
+    const handler = async (interceptedRequest: PuppeteerRequest) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       loggerTrace(`${interceptedRequest.url()} ← page.on('request') fired`)
 
@@ -59,8 +61,8 @@ class PuppeteerDriver implements Driver {
     }
   }
 
-  public async onResponse(fn: OnResponseHandler) {
-    const handler = async (interceptedResponse) => {
+  public async onResponse(fn: OnResponseHandler): Promise<() => void> {
+    const handler = async (interceptedResponse: PuppeteerResponse) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()
 
@@ -77,7 +79,7 @@ class PuppeteerDriver implements Driver {
     return () => this.page.off('response', handler)
   }
 
-  public onClose(fn) {
+  public onClose(fn: () => void): () => void {
     this.page.on('close', fn)
 
     return () => this.page.off('close', fn)

@@ -30,7 +30,7 @@ class ExpressDriver implements Driver {
     this.isActive = true
 
     // `/tinkoffApi/nearest_region?...` → `${env.tinkoffApi}/nearest_region?...`
-    const resolveReal = (originalUrl, api, key) => {
+    const resolveReal = (originalUrl: string, api: string, key: string): string => {
       const url = api + originalUrl.replace(new RegExp(`/${key}`), '')
 
       // It could happen `//` – replace it with `/`
@@ -130,6 +130,7 @@ class ExpressDriver implements Driver {
 
             // it doesn't matter what content-encoding was originally,
             // teremock has already decoded the response
+            sendResp.headers = sendResp.headers ?? {}
             sendResp.headers['content-encoding'] = 'identity'
             delete sendResp.headers['x-content-encoding-over-network']
             res.status(sendResp.status).set(sendResp.headers).send(sendResp.body)
@@ -165,7 +166,7 @@ class ExpressDriver implements Driver {
     }
   }
 
-  public onClose(fn) {
+  public onClose(fn: () => void) {
     return fn
   }
 }

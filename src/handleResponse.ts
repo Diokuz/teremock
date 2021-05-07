@@ -1,13 +1,14 @@
 import { debug } from './logger'
 import { blacklist, getBody, loggerTrace } from './utils'
-import { Options, Storage, Request, Response, Meta } from './types'
+
+import type { Options, Storage, Request, Response, Meta } from './types'
 
 const logger = debug('teremock:response')
 
 type Params = Options & {
   reqSet: Set<string>
-  _onReqCompleted: Function
-  _onReqsCompleted: Function
+  _onReqCompleted: (req: Request, resp: Response) => void
+  _onReqsCompleted: () => void
   storage: Storage
 }
 
@@ -17,7 +18,7 @@ type Arg = {
   __meta?: Meta
 }
 
-export default function createHandler(initialParams) {
+export default function createHandler(initialParams: Params) {
   logger('creating response handler')
 
   return async function handleResponse({ request, response: pResponse, __meta }: Arg, extraParams = {}) {
@@ -75,14 +76,12 @@ export default function createHandler(initialParams) {
     reqSet.delete(mockId)
     mog('« reqSet after delete is', Array.from(reqSet))
 
-    const { id, timestamp, order, ...rest } = request
-
-    params._onReqCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
+    params._onReqCompleted(request, response)
 
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')
 
-      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
+      params._onReqsCompleted()
     }
   }
 }

@@ -1,13 +1,21 @@
 import debug from 'debug'
-import { Route } from 'playwright'
-import { Request, Response, DriverRequest, Interceptor } from '../types'
 import { loggerTrace } from '../utils'
+
+import type { Route } from 'playwright'
+import type {
+  Request,
+  Response,
+  DriverRequest,
+  Interceptor,
+  DriverErrorCode,
+  ExtractDriverReqResOptions,
+} from '../types'
 
 const logger = debug('teremock:driver:puppeteer:request')
 
 let requestsCounter: number = 0
 
-export function extractPlaywrightRequest(route: Route, options): DriverRequest {
+export function extractPlaywrightRequest(route: Route, options: ExtractDriverReqResOptions): DriverRequest {
   const playwrightRequest = route.request()
   const request: Request = {
     url: playwrightRequest.url(),
@@ -31,7 +39,7 @@ export function extractPlaywrightRequest(route: Route, options): DriverRequest {
 
   return {
     request,
-    abort: (...args) => route.abort(...args),
+    abort: (errorCode?: DriverErrorCode) => route.abort(errorCode),
     next: (interceptor: Interceptor) => {
       logger(`continue() call`)
       // @ts-expect-error
@@ -44,7 +52,7 @@ export function extractPlaywrightRequest(route: Route, options): DriverRequest {
       // @ts-expect-error
       playwrightRequest.__meta.interceptor = interceptor
       loggerTrace(`${request.url} ← request.respond(...)`)
-      // @ts-expect-error
+
       route.fulfill(response)
     },
   }

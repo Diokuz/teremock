@@ -1,21 +1,21 @@
 import signale, { debug } from './logger'
-import { findInterceptor, parseUrl, assignResponse, getBody, getQuery, loggerTrace } from './utils'
-import { Options, DefResponse, Storage, Interceptor, Request, Response } from './types'
+import { findInterceptor, assignResponse, getBody, getQuery, loggerTrace } from './utils'
 import { DEFAULT_RESP_HEADERS } from './consts'
+
+import type { Options, DefResponse, Storage, Interceptor, Request, Response, DriverRequest } from './types'
 
 // const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 
 const logger = debug('teremock:request')
 
-type Params = Options & {
+export interface Params extends Options {
   reqSet: { add: (x: string) => void; get: () => Set<string> }
-  _onReqStarted: Function
-  _onReqsReject: Function
-  _onMatch: (interceptor: Interceptor, req: any) => void
+  _onReqStarted: (request: Request) => void
+  _onMatch: (interceptor: Interceptor, req: Request) => void
   storage: Storage
 }
 
-async function sleep(time) {
+async function sleep(time: number) {
   return new Promise((resolve, _reject) => {
     setTimeout(resolve, time)
   })
@@ -84,12 +84,12 @@ async function beforeRespond({
   respond(resultResponse, interceptor)
 }
 
-export default function createHandler(initialParams) {
+export default function createHandler(initialParams: Params) {
   let i = 0
   const increment = () => i++
   logger('creating request handler')
 
-  return async function handleRequest({ request, abort, next, respond }, extraParams = {}) {
+  return async function handleRequest({ request, abort, next, respond }: DriverRequest, extraParams: Partial<Params> = {}) {
     const params: Params = { ...initialParams, ...extraParams }
     const { interceptors, storage, reqSet, ci, responseOverrides, getMockId, _onMatch } = params
 
@@ -114,7 +114,7 @@ export default function createHandler(initialParams) {
 
     _onMatch(interceptor, request)
 
-    const mockId = getMockId({ ...request, naming: interceptor.naming, name: interceptor.name, body: getBody(request.body) })
+    const mockId = getMockId({ ...request, naming: interceptor.naming ?? {}, name: interceptor.name, body: getBody(request.body) })
     const mog = debug(`teremock:${mockId}`)
 
     mog(`interceptor found`, interceptor)
@@ -126,7 +126,7 @@ export default function createHandler(initialParams) {
       return
     }
 
-    params._onReqStarted({ ...parseUrl(request.url), url: request.url, method: request.method, body: request.body, headers: request.headers, requestId: request.id, requestTimestamp: request.timestamp, requestOrder: request.order })
+    params._onReqStarted(request)
     reqSet.add(mockId)
     mog('» reqSet is', Array.from(reqSet.get()))
 

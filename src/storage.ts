@@ -3,10 +3,10 @@ import path from 'path'
 import makeDir from 'make-dir'
 import debug from 'debug'
 import signale from './logger'
-import { Storage, Request, Response } from './types'
+import type { Storage, Request, Response } from './types'
 
 const os = require('os')
-const pathToUnixPath = os.platform() === 'win32' ? (str) => str.replace(/\\/g, '/') : (str) => str
+const pathToUnixPath = os.platform() === 'win32' ? (str: string) => str.replace(/\\/g, '/') : (str: string) => str
 
 const loggerGet = debug('teremock:storage:get')
 const loggerSet = debug('teremock:storage:set')
@@ -65,7 +65,7 @@ export default class FileStorage implements Storage {
   }
 
   // only for tests
-  _getFn(mockId): string {
+  _getFn(mockId: string): string {
     return getFileName({ mockId, wd: this.wd })
   }
 

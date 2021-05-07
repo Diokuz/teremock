@@ -13,11 +13,14 @@
     "declaration": false,
     "resolveJsonModule": true,
     "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictFunctionTypes": true,
     "importHelpers": true,
     "skipLibCheck": true,
     "downlevelIteration": true
   },
   "include": [
     "src/**/*",
+    "__tests__",
   ]
 }

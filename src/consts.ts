@@ -1,7 +1,8 @@
 import path from 'path'
 import isCi from 'is-ci'
-import { Options, Interceptor } from './types'
 import getMockId from './mock-id'
+
+import type { Options, Interceptor } from './types'
 
 export const DEFAULT_INTERCEPTOR_CAPTURE = {
   name: '__teremock_buildin_capture',
