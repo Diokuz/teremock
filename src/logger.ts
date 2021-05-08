@@ -1,5 +1,5 @@
 import { Signale } from 'signale'
-import debug from 'debug'
+import nativeDebug from 'debug'
 
 let logLevel = process.env.DEBUG_LL || 'info'
 let resultLogLevel = 'debug'
@@ -51,11 +51,11 @@ const logger = new Signale(options)
 
 export default logger
 
-const loggersMap = {}
+const loggersMap: Record<string, ReturnType<typeof nativeDebug>> = {}
 
-export function debug(key) {
+export function debug(key: string) {
   if (!loggersMap[key]) {
-    loggersMap[key] = debug(key)
+    loggersMap[key] = nativeDebug(key)
   }
 
   return loggersMap[key]

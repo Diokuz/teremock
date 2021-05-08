@@ -4,36 +4,33 @@ import 'jest-playwright-preset'
 
 import fs from 'fs'
 import path from 'path'
-import { spawn } from 'child_process'
 import rimraf from 'rimraf'
-import signale from 'signale'
-import waitPort from 'wait-port'
 import { Teremock, PlaywrightDriver } from '../src'
+import { setup as setupDevServer, teardown as teardownDevServer } from 'jest-process-manager'
 
-async function sleep(time) {
+async function sleep(time: number): Promise<void> {
   return new Promise((resolve, _reject) => {
     setTimeout(resolve, time)
   })
 }
 
-let server
-
 describe('teremock playwright', () => {
-  let teremock
+  let teremock: Teremock
 
   beforeAll(async () => {
     teremock = new Teremock({ driver: new PlaywrightDriver({ page }) })
 
     const serverPath = path.resolve(__dirname, 'server')
 
-    // Cant kill if detached: false (for reasons unknown)
-    // Probably https://azimi.me/2014/12/31/kill-child_process-node-js.html
-    server = spawn('node', [serverPath], { detached: true })
-    server.stdout.on('data', function(data) {
-      signale.info(data.toString())
-      // process.stdout.write(data.toString())
-    });
-    await waitPort({ host: 'localhost', port: 3000 })
+    await setupDevServer({
+      command: `node ${serverPath}`,
+      port: 3000,
+      usedPortAction: 'kill',
+    })
+  })
+
+  afterAll(async () => {
+    await teardownDevServer()
   })
 
   describe('basic', () => {
@@ -62,8 +59,4 @@ describe('teremock playwright', () => {
       expect(fs.existsSync(mockFilePath)).toBe(true)
     })
   })
-})
-
-process.on('exit', () => {
-  process.kill(-server.pid)
 })

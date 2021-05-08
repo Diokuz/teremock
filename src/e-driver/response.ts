@@ -1,15 +1,15 @@
 // import debug from 'debug'
 // const logger = debug('teremock:puppeteer:response')
-import { Headers } from '../types'
+import type { Headers } from '../types'
 
-type GotResponse = {
+export interface GotResponse {
   body: string
   url: string
   statusCode: number
   headers?: Record<string, string | string[] | undefined>
 }
 
-export type ExtractedResponse = {
+export interface ExtractedResponse {
   url: string
   headers?: Headers
   status: number
@@ -27,16 +27,16 @@ export function extractGotResponse(gotResponse: GotResponse): ExtractedResponse 
     // pass
   }
 
-  const filteredHeaders: Record<string, string | string[]> = Object.keys(gotResponse.headers || {}).reduce(
-    (acc, key) => {
-      if (typeof gotResponse.headers?.[key] !== 'undefined' && ALLOWED_HEADERS.has(key.toLowerCase())) {
-        acc[key] = gotResponse.headers[key]
-      }
+  const filteredHeaders: Record<string, string> = Object.keys(gotResponse.headers || {}).reduce((acc, key) => {
+    if (gotResponse.headers?.[key] !== undefined && ALLOWED_HEADERS.has(key.toLowerCase())) {
+      // see https://tools.ietf.org/html/rfc2616#section-4.2 we can join array to comma-separated string
+      acc[key] = Array.isArray(gotResponse.headers[key])
+        ? (gotResponse.headers![key]! as string[]).join(',')
+        : (gotResponse.headers![key]! as string)
+    }
 
-      return acc
-    },
-    {}
-  )
+    return acc
+  }, {} as Record<string, string>)
 
   return {
     url: gotResponse.url,

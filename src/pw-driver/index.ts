@@ -2,11 +2,12 @@
 
 import { extractPlaywrightRequest } from './request'
 import { extractPlaywrightResponse } from './response'
-import { Driver, OnRequestHandler, OnResponseHandler } from '../types'
 import logger from '../logger'
 import { loggerTrace, getTimeStampWithStrictOrder } from '../utils'
-import { Response, Page } from 'playwright'
 import { URL } from 'url'
+
+import type { Driver, OnRequestHandler, OnResponseHandler } from '../types'
+import type { Response, Route, Page } from 'playwright'
 
 /**
  * There is no valid reason to have more than one driver instances per page
@@ -18,6 +19,7 @@ const redirectCodes = [301, 302, 303, 305, 307, 308]
 class PlaywrightDriver implements Driver {
   private page: Page
   private seenRedirects: Map<string, number>
+  private _routeUrl = () => true
 
   constructor({ page }: { page: Page }) {
     logger.debug(`instantiating new playwright driver`)
@@ -47,7 +49,7 @@ class PlaywrightDriver implements Driver {
   }
 
   public async onRequest(fn: OnRequestHandler) {
-    const handler = (route) => {
+    const handler = (route: Route) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       loggerTrace(`${route.request().url()} ← page.on('request') fired`)
 
@@ -56,11 +58,11 @@ class PlaywrightDriver implements Driver {
       fn({ request, abort, next, respond })
     }
 
-    await this.page.route(() => true, handler)
+    await this.page.route(this._routeUrl, handler)
 
     return async () => {
       pagesSet.delete(this.page)
-      await this.page.unroute(() => true, handler)
+      await this.page.unroute(this._routeUrl, handler)
     }
   }
 
@@ -95,7 +97,7 @@ class PlaywrightDriver implements Driver {
     return () => this.page.off('response', handler)
   }
 
-  public onClose(fn) {
+  public onClose(fn: (page: Page) => void): () => unknown {
     this.page.on('close', fn)
 
     return () => this.page.off('close', fn)

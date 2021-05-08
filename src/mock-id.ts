@@ -1,5 +1,5 @@
 import getRequestId from './request-id'
-import { GetMockIdParams } from './types'
+import type { GetMockIdParams } from './types'
 
 /**
  * Returns uniq mock id.

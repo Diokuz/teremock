@@ -1,6 +1,7 @@
-export type Headers = Record<string, string | string[]>
+import type { ErrorCode as PErrorCode } from 'puppeteer'
+export type Headers = Record<string, string>
 
-export type Request = {
+export interface Request {
   url: string
   method: string
   headers?: Headers
@@ -11,9 +12,11 @@ export type Request = {
   order?: number
 }
 
+export type DriverErrorCode = PErrorCode
+
 export type ArgRequest = Request & { query: Record<string, string> }
 
-export type Response = {
+export interface Response {
   url: string
   status: number
   headers?: Headers
@@ -21,12 +24,12 @@ export type Response = {
   // 1. It makes test run longer
   // 2. It makes impossible simultaneous use of response.ttfb and options.response.ttfb
   ttfb?: number | number[]
-  body?: string | Record<string, any>
+  body?: any
   timestamp?: number
   order?: number
 }
 
-export type GetMockIdParams = {
+export interface GetMockIdParams {
   url: string
   naming: Naming
   name?: string
@@ -50,7 +53,7 @@ export interface Storage {
   setWd: (wd: string | string[]) => void
 }
 
-export type Naming = {
+export interface Naming {
   query?: {
     whitelist?: string[]
     blacklist?: string[]
@@ -61,17 +64,17 @@ export type Naming = {
   }
 }
 
-export type Capture = {
+export interface Capture {
   urls: string[]
   methods: string[]
 }
 
-export type Pass = {
+export interface Pass {
   urls: string[]
   methods: string[]
 }
 
-export type Interceptor = {
+export interface Interceptor {
   name: string // from keys of UserInterceptor. If no name, hostname+path is used
   url: string
   methods: Set<string>
@@ -83,7 +86,7 @@ export type Interceptor = {
   response?: DefResponse
 }
 
-export type UserInterceptor = {
+export interface UserInterceptor {
   name?: string
   url?: string
   methods?: Set<string> | string
@@ -95,10 +98,11 @@ export type UserInterceptor = {
   response?: DefResponse
 }
 
-export type Options = {
+export interface Options {
   interceptors: Record<string, Interceptor>
   ci: boolean
   skipResponseHeaders: string[]
+  skipRequestHeaders: string[]
   awaitConnectionsOnStop: boolean
   getMockId: (arg: GetMockIdParams) => string
   responseOverrides?: Partial<Response>
@@ -106,28 +110,29 @@ export type Options = {
   onStop?: (arg: { matched: Map<string, string[]> }) => void
 }
 
-export type UserOptions = {
+export interface UserOptions {
   page?: any
   wd?: string | string[]
   interceptors?: Record<string, UserInterceptor>
-  getMockId?: (arg: GetMockIdParams) => string | void
+  getMockId?: (arg: GetMockIdParams) => string | undefined
   skipResponseHeaders?: string[]
+  skipRequestHeaders?: string[]
   responseOverrides?: Partial<Response>
 }
 
-export type Meta = {
+export interface Meta {
   request: Request
   interceptor: Interceptor
 }
 
-export type DriverRequest = {
+export interface DriverRequest {
   request: Request
   abort: Function
   next: Function
   respond: (data: any, interceptor: Interceptor) => void
 }
 
-export type DriverResponse = {
+export interface DriverResponse {
   request: Request
   response: Response
   __meta?: Meta // Could be abscent in case when request was made before teremock.start()
@@ -142,6 +147,11 @@ export interface Driver {
   onRequest: (fn: OnRequestHandler) => Promise<Function>
   onResponse: (fn: OnResponseHandler) => Promise<Function>
   onClose: (fn: any) => Function
+}
+
+export interface ExtractDriverReqResOptions {
+  order: number
+  timestamp: number
 }
 
 export type EventInfo = {

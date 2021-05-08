@@ -1,13 +1,14 @@
 import { debug } from './logger'
 import { blacklist, getBody, loggerTrace } from './utils'
-import { Options, Storage, Request, Response, Meta } from './types'
+
+import type { Options, Storage, Request, Response, Meta } from './types'
 
 const logger = debug('teremock:response')
 
 type Params = Options & {
   reqSet: Set<string>
-  _onReqCompleted: Function
-  _onReqsCompleted: Function
+  _onReqCompleted: (req: Request, resp: Response) => void
+  _onReqsCompleted: () => void
   storage: Storage
 }
 
@@ -17,12 +18,12 @@ type Arg = {
   __meta?: Meta
 }
 
-export default function createHandler(initialParams) {
+export default function createHandler(initialParams: Params) {
   logger('creating response handler')
 
   return async function handleResponse({ request, response: pResponse, __meta }: Arg, extraParams = {}) {
     const params: Params = { ...initialParams, ...extraParams }
-    const { storage, reqSet, ci, skipResponseHeaders, getMockId } = params
+    const { storage, reqSet, ci, skipResponseHeaders, skipRequestHeaders, getMockId } = params
 
     loggerTrace(`${request.url} → handling response`)
 
@@ -69,20 +70,22 @@ export default function createHandler(initialParams) {
       const { timestamp: _x, order: _z, id, ...mockRequest } = request
       const { timestamp: _y, order: _k, ...mockResponse } = response
 
+      if (mockRequest.headers) {
+        mockRequest.headers = blacklist(mockRequest.headers, skipRequestHeaders)
+      }
+
       await storage.set(mockId, { request: mockRequest, response: mockResponse })
     }
 
     reqSet.delete(mockId)
     mog('« reqSet after delete is', Array.from(reqSet))
 
-    const { id, timestamp, order, ...rest } = request
-
-    params._onReqCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
+    params._onReqCompleted(request, response)
 
     if (reqSet.size === 0) {
       mog('« invoking _onReqsCompleted')
 
-      params._onReqsCompleted({...rest, requestId: id, requestTimestamp: timestamp, requestOrder: order, responseTimestamp: pResponse.timestamp, responseOrder: pResponse.order})
+      params._onReqsCompleted()
     }
   }
 }

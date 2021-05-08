@@ -1,6 +1,6 @@
 import assert from 'assert'
 // import signale from 'signale'
-import { UserOptions, UserInterceptor } from './types'
+import type { UserOptions, UserInterceptor } from './types'
 
 function assertIsPage(maybePage: any, prefix: string): asserts maybePage is any {
   if (typeof maybePage.mainFrame !== 'function') {

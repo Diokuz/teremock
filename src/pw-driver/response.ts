@@ -1,13 +1,14 @@
 import debug from 'debug'
-import { Response as PlaywrightResponse } from 'playwright'
-import { Request, Response, DriverResponse } from '../types'
 import signale from '../logger'
+
+import type { Response as PlaywrightResponse } from 'playwright'
+import type { Request, Response, DriverResponse, Meta, ExtractDriverReqResOptions } from '../types'
 
 const logger = debug('teremock:driver:puppeteer:response')
 
 export async function extractPlaywrightResponse(
   playwrightResponse: PlaywrightResponse,
-  options
+  options: ExtractDriverReqResOptions
 ): Promise<DriverResponse> {
   const playwrightRequest = playwrightResponse.request()
 
@@ -59,12 +60,12 @@ export async function extractPlaywrightResponse(
 
   logger(`got the response, sending it to teremock core`)
 
-  // @ts-expect-error
-  if (!playwrightRequest.__meta) {
+  const { __meta } = (playwrightRequest as unknown) as { __meta?: Meta }
+
+  if (!__meta) {
     signale.warn(`__meta was not found in playwrightRequest. Probably it was made before teremock.start()`)
     signale.warn(`Passing the response witout storing it. The request was:`, request)
   }
 
-  // @ts-expect-error
-  return { request, response, __meta: playwrightRequest.__meta }
+  return { request, response, __meta }
 }

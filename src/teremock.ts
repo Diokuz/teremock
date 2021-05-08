@@ -8,10 +8,11 @@ import FileStorage from './storage'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
-import { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor, SpyTuple, Spy } from './types'
 import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
 import PuppeteerDriver from './p-driver'
 import { DEFAULT_OPTIONS } from './consts'
+
+import type { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor, SpyTuple, Spy, Request, Response } from './types'
 
 const logger = debug('teremock')
 
@@ -19,7 +20,7 @@ function noop() {}
 
 class Teremock {
   private defaultOptions: Options
-  private extraParams: UserOptions
+  private extraParams: Options
   private options: Options
   private storage: Storage
   /** set of urls of currently active connections. all connections became inactive after response. */
@@ -34,7 +35,6 @@ class Teremock {
   protected driver: Driver | undefined
   private _startPromise: Promise<any> | void
   private _resolveReqs: Function
-  private _rejectReqs: Function
   private _spies: SpyTuple[]
   private _interceptors: Record<string, Interceptor>
   private _matched: Map<string, string[]>
@@ -46,23 +46,17 @@ class Teremock {
     this._spies = []
     this._interceptors = {}
     this._resolveReqs = noop
-    this._rejectReqs = noop
     this._matched = new Map()
     this.storage = opts?.storage ?? new FileStorage()
     this.driver = opts?.driver
   }
 
-  private _onAnyReqStart(req) {
+  private _onAnyReqStart(req: Request) {
     if (this.reqSet.size === 0) {
-      this.reqsPromise = new Promise((resolve, reject) => {
+      this.reqsPromise = new Promise((resolve) => {
         this._resolveReqs = () => {
           resolve(Array.from(this.reqSetRet))
           this.reqSetRet.clear()
-        }
-        this._rejectReqs = (...args) => {
-          console.trace()
-          signale.log('args', args)
-          reject(...args)
         }
       })
     }
@@ -73,28 +67,27 @@ class Teremock {
           spy.called = true
           spy.callCount++
           spy.calledOnce = spy.callCount === 1
-          const { requestId, requestTimestamp, requestOrder } = req
-          if (requestId !== -1) {
+
+          if (req.id !== -1 && req.id && req.order && req.timestamp) {
             spy.events.push({
-              requestTimestamp,
-              requestOrder,
-              requestId
+              requestTimestamp: req.timestamp,
+              requestOrder: req.order,
+              requestId: req.id
             })
           }
         }
       })
     }
   }
-  private _onAnyReqEnd(req) {
+  private _onAnyReqEnd(req: Request, resp: Response) {
     if (this._spies.length > 0) {
       this._spies.forEach(([interceptor, spy]) => {
         if (isInterceptorMatched(interceptor, req)) {
-          const { requestId, responseTimestamp, responseOrder } = req
-          if (requestId !== -1) {
-            const requestObj = spy.events.find(obj => obj.requestId === requestId)
-            if (requestObj) {
-              requestObj.responseTimestamp = responseTimestamp
-              requestObj.responseOrder = responseOrder
+          if (req.id !== -1 && req.id) {
+            const eventInfo = spy.events.find(obj => obj.requestId === req.id)
+            if (eventInfo) {
+              eventInfo.responseTimestamp = resp.timestamp
+              eventInfo.responseOrder = resp.order
             }
           }
         }
@@ -112,7 +105,8 @@ class Teremock {
       await this.stop()
     }
 
-    let resolveStartPromise
+    let resolveStartPromise: (_v?: any) => void
+
     this._startPromise = new Promise((resolve) => {
       resolveStartPromise = resolve
     })
@@ -159,7 +153,6 @@ class Teremock {
         get: () => this.reqSet,
       },
       _onReqStarted: (req) => this._onAnyReqStart(req),
-      _onReqsReject: (...args) => this._rejectReqs(...args),
       _onMatch: (interceptor: Interceptor, req: any) => {
         if (!this._matched.has(interceptor.name)) {
           this._matched.set(interceptor.name, [])
@@ -174,9 +167,8 @@ class Teremock {
       interceptors: this._interceptors,
       storage: this.storage,
       reqSet: this.reqSet,
-      _onReqCompleted: (req) => this._onAnyReqEnd(req),
+      _onReqCompleted: (req: Request, resp: Response) => this._onAnyReqEnd(req, resp),
       _onReqsCompleted: () => this._resolveReqs(),
-      _onReqsReject: (...args) => this._rejectReqs(...args),
     })
 
     logger('Handlers created, params validated')
@@ -195,7 +187,7 @@ class Teremock {
 
     logger('_startPromise about to resolve (Request interception enabled, listeners added)')
 
-    resolveStartPromise()
+    resolveStartPromise!()
 
     return this._startPromise
   }

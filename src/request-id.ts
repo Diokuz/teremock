@@ -19,7 +19,7 @@ type Params = {
   naming: Naming
 }
 
-function pickDeep(obj, keys: List) {
+function pickDeep(obj: Record<string, any>, keys: List): Record<string, any> {
   return keys.reduce((acc, key) => {
     let val
 
@@ -66,7 +66,7 @@ const getRequestId = (params: Params) => {
   let bodyBlacklist = params.naming.body?.blacklist || []
 
   const urlObj = new URL(url)
-  let bodyObj
+  let bodyObj: any
 
   urlObj.searchParams.sort()
 

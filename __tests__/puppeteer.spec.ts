@@ -1,27 +1,33 @@
 import fs from 'fs'
 import path from 'path'
-import { spawn } from 'child_process'
 import puppeteer from 'puppeteer'
-import waitPort from 'wait-port'
 import rimraf from 'rimraf'
-import signale from 'signale'
 import sinon from 'sinon'
 import teremock, { Teremock } from '../src'
+import { parseUrl } from '../src/utils'
+import { setup as setupDevServer, teardown as teardownDevServer } from 'jest-process-manager'
 
-async function sleep(time) {
+import type { Page, Browser } from 'puppeteer'
+import type { Request } from '../src/types'
+
+async function sleep(time: number): Promise<void> {
   return new Promise((resolve, _reject) => {
     setTimeout(resolve, time)
   })
 }
 
-let server
-
 describe('teremock puppeteer', () => {
-  let page
-  let browser
+  let page: Page
+  let browser: Browser
 
   beforeAll(async () => {
     const serverPath = path.resolve(__dirname, 'server')
+    await setupDevServer({
+      command: `node ${serverPath}`,
+      port: 3000,
+      usedPortAction: 'kill',
+    })
+
     browser = await puppeteer.launch(process.env.D ? {
       headless: false,
       slowMo: 80,
@@ -29,20 +35,11 @@ describe('teremock puppeteer', () => {
     } : {})
 
     page = await browser.newPage()
-    // Cant kill if detached: false (for reasons unknown)
-    // Probably https://azimi.me/2014/12/31/kill-child_process-node-js.html
-    server = spawn('node', [serverPath], { detached: true })
-    server.stdout.on('data', function(data) {
-      signale.info(data.toString())
-      // process.stdout.write(data.toString())
-    });
-    await waitPort({ host: 'localhost', port: 3000 })
   })
 
   afterAll(async () => {
     await browser.close()
-    // server.kill()
-    process.kill(-server.pid)
+    await teardownDevServer()
   })
 
   describe('basic', () => {
@@ -213,14 +210,14 @@ describe('teremock puppeteer', () => {
       // @todo await some real effects
       await sleep(99) // need some time to evaluate
       await teremock.connections()
-      const firstMockId = storage.set.getCall(0).args[0]
+      const firstMockId = (storage.set.getCall(0).args as any[])[0]
       expect(firstMockId.length > 0).toBe(true)
 
       // * Making request with query param baz=2
       await page.evaluate(function() { fetch('/api?foo=bar&baz=2') } )
       await sleep(99) // need some time to evaluate
       await teremock.connections()
-      const secondMockId = storage.set.getCall(1).args[0]
+      const secondMockId = (storage.set.getCall(1).args as any[])[0]
 
       expect(firstMockId).toBe(secondMockId)
       await teremock.stop()
@@ -271,7 +268,7 @@ describe('teremock puppeteer', () => {
       // * storage.set must be called, since the request is capturable
       // console.log('storage.set.getCall(0).args[0]', storage.set.getCall(0).args[0])
       expect(storage.set.calledOnce).toBe(true)
-      expect(storage.set.getCall(0).args[0]).toBe('some_name--get-q-click')
+      expect((storage.set.getCall(0).args as any[])[0]).toBe('some_name--get-q-click')
       await teremock.stop()
     })
 
@@ -307,9 +304,10 @@ describe('teremock puppeteer', () => {
       const interceptors = {
         functional: {
           url: '/api',
-          response: async (request) => {
+          response: async (request: Request) => {
+            const { query } = parseUrl(request.url)
             return {
-              body: { suggest: `${request.query.q}-${request.query.q}-${request.query.q}` }
+              body: { suggest: `${query.q}-${query.q}-${query.q}` }
             }
           }
         }
@@ -639,8 +637,4 @@ describe('teremock puppeteer', () => {
       await teremock.stop()
     })
   })
-})
-
-process.on('exit', () => {
-  process.kill(-server.pid)
 })

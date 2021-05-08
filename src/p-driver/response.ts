@@ -1,14 +1,19 @@
 import debug from 'debug'
-import { Request, Response, DriverResponse } from '../types'
 import signale from '../logger'
+
+import type { Response as PuppeteerResponse } from 'puppeteer'
+import type { Request, Response, DriverResponse, Meta, ExtractDriverReqResOptions } from '../types'
 
 const logger = debug('teremock:driver:puppeteer:response')
 
-export async function extractPuppeteerResponse(puppeteerResponse, options): Promise<DriverResponse> {
+export async function extractPuppeteerResponse(
+  puppeteerResponse: PuppeteerResponse,
+  options: ExtractDriverReqResOptions
+): Promise<DriverResponse> {
   const puppeteerRequest = puppeteerResponse.request()
 
-  let requestBody: string | Record<string, any>
-  let responseBody: string | Record<string, any> | undefined
+  let requestBody: any
+  let responseBody: any
 
   try {
     responseBody = await puppeteerResponse.json()
@@ -23,13 +28,14 @@ export async function extractPuppeteerResponse(puppeteerResponse, options): Prom
     }
   }
 
-  try {
-    requestBody = JSON.parse(puppeteerRequest.postData())
-  } catch (e) {
-    requestBody = puppeteerRequest.postData()
+  requestBody = puppeteerRequest.postData()
+  if (requestBody) {
+    try {
+      requestBody = JSON.parse(requestBody)
+    } catch (e) {}
   }
 
-  const { teremockRequest } = puppeteerRequest
+  const { teremockRequest } = (puppeteerRequest as unknown) as { teremockRequest: Request }
 
   const request: Request = {
     url: puppeteerRequest.url(),
@@ -54,10 +60,12 @@ export async function extractPuppeteerResponse(puppeteerResponse, options): Prom
 
   logger(`got the response, sending it to teremock core`)
 
-  if (!puppeteerRequest.__meta) {
+  const { __meta } = (puppeteerRequest as unknown) as { __meta?: Meta }
+
+  if (!__meta) {
     signale.warn(`__meta was not found in puppeteerRequest. Probably it was made before teremock.start()`)
     signale.warn(`Passing the response witout storing it. The request was:`, request)
   }
 
-  return { request, response, __meta: puppeteerRequest.__meta }
+  return { request, response, __meta }
 }

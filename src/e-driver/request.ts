@@ -1,6 +1,8 @@
 import debug from 'debug'
-import { Request, Response, DriverRequest, Interceptor } from '../types'
 import { ExtractedResponse } from './response'
+
+import type { Request, Response, DriverRequest, Interceptor } from '../types'
+import type { Express } from 'express'
 
 const logger = debug('teremock:puppeteer:request')
 
@@ -22,7 +24,12 @@ type RespondResolve = RealResponseResolve | MockedResponseResolve
 
 let id = 0
 
-export async function extractExpressRequest(req, res, realUrl: string, getRealResponse: GetRealResponse): Promise<Ret> {
+export async function extractExpressRequest(
+  req: Express['request'],
+  res: Express['response'],
+  realUrl: string,
+  getRealResponse: GetRealResponse
+): Promise<Ret> {
   const request: Request = {
     url: realUrl,
     method: req.method,
@@ -35,7 +42,7 @@ export async function extractExpressRequest(req, res, realUrl: string, getRealRe
   }
 
   let resolve: (arg: RespondResolve) => void
-  let reject
+  let reject: (e: Error) => void
 
   const onRespondPromise = new Promise<RespondResolve>((r, rej) => {
     resolve = r
