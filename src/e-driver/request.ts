@@ -49,7 +49,7 @@ export async function extractExpressRequest(
     reject = rej
   })
 
-  const abort = () => {
+  const abort = async () => {
     res.status(503).end()
     reject(new Error(`abort()`))
   }
@@ -60,7 +60,7 @@ export async function extractExpressRequest(
 
     resolve(realResp)
   }
-  const respond = (resp: Response, interceptor: Interceptor) => {
+  const respond = async (resp: Response, interceptor: Interceptor) => {
     const mockedResp: MockedResponseResolve = { response: resp, interceptor }
 
     resolve(mockedResp)

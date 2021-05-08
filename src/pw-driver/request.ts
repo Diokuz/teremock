@@ -39,21 +39,21 @@ export function extractPlaywrightRequest(route: Route, options: ExtractDriverReq
 
   return {
     request,
-    abort: (errorCode?: DriverErrorCode) => route.abort(errorCode),
-    next: (interceptor: Interceptor) => {
+    abort: async (errorCode?: DriverErrorCode) => await route.abort(errorCode),
+    next: async (interceptor: Interceptor) => {
       logger(`continue() call`)
       // @ts-expect-error
       playwrightRequest.__meta.interceptor = interceptor
       loggerTrace(`${request.url} ← request.continue()`)
-      route.continue()
+      await route.continue()
     },
-    respond: (response: Response, interceptor: Interceptor) => {
+    respond: async (response: Response, interceptor: Interceptor) => {
       logger(`respond() call`)
       // @ts-expect-error
       playwrightRequest.__meta.interceptor = interceptor
       loggerTrace(`${request.url} ← request.respond(...)`)
 
-      route.fulfill(response)
+      await route.fulfill(response)
     },
   }
 }

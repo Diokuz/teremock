@@ -38,7 +38,7 @@ export interface GetMockIdParams {
   headers?: Headers
 }
 
-type ResponseFunc = (req: ArgRequest) => Promise<any>
+export type ResponseFunc = (req: ArgRequest) => Promise<Partial<Response>>
 export type DefResponse = Partial<Response> | ResponseFunc
 
 type ListItem = string | string[]
@@ -98,26 +98,24 @@ export interface UserInterceptor {
   response?: DefResponse
 }
 
-export interface Options {
-  interceptors: Record<string, Interceptor>
+export interface CommonOptions {
   ci: boolean
+  page?: any
   skipResponseHeaders: string[]
   skipRequestHeaders: string[]
   awaitConnectionsOnStop: boolean
-  getMockId: (arg: GetMockIdParams) => string
   responseOverrides?: Partial<Response>
   wd?: string | string[]
   onStop?: (arg: { matched: Map<string, string[]> }) => void
 }
+export interface Options extends CommonOptions {
+  interceptors: Record<string, Interceptor>
+  getMockId: (arg: GetMockIdParams) => string
+}
 
-export interface UserOptions {
-  page?: any
-  wd?: string | string[]
+export interface UserOptions extends Partial<CommonOptions> {
   interceptors?: Record<string, UserInterceptor>
   getMockId?: (arg: GetMockIdParams) => string | undefined
-  skipResponseHeaders?: string[]
-  skipRequestHeaders?: string[]
-  responseOverrides?: Partial<Response>
 }
 
 export interface Meta {
@@ -127,9 +125,9 @@ export interface Meta {
 
 export interface DriverRequest {
   request: Request
-  abort: Function
-  next: Function
-  respond: (data: any, interceptor: Interceptor) => void
+  abort(errCode: DriverErrorCode): Promise<void>
+  next(interceptor: Interceptor): Promise<void>
+  respond(response: Response, interceptor: Interceptor): Promise<void>
 }
 
 export interface DriverResponse {
@@ -138,8 +136,7 @@ export interface DriverResponse {
   __meta?: Meta // Could be abscent in case when request was made before teremock.start()
 }
 
-export type OnRequestHandler = (arg: DriverRequest) => void
-
+export type OnRequestHandler = (arg: DriverRequest) => Promise<void>
 export type OnResponseHandler = (arg: DriverResponse) => Promise<void>
 
 export interface Driver {
