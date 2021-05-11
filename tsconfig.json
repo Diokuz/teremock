@@ -5,6 +5,7 @@
     "target": "ES2018",
     "lib": ["es2015", "es2016", "dom"],
     "outDir": "./dist",
+    "rootDir": "src",
     "moduleResolution": "node",
     "module": "CommonJS",
     "noUnusedLocals": true,
@@ -18,7 +19,6 @@
     "downlevelIteration": true
   },
   "include": [
-    "src/**/*",
-    "__tests__",
+    "src/**/*"
   ]
 }
