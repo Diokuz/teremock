@@ -4,9 +4,23 @@ ts:
 	cp -r src dist
 	yarn pnpify tsc
 
-
-.PHONY: prepare
-prepare: ts
+.PHONY: pretty-write
+pretty-write:
 	yarn prettier --write src/**/*.ts
+
+.PHONY: pretty-check
+pretty-check:
+	yarn prettier --check src/**/*.ts
+
+.PHONY: test
+test:
 	NODE_OPTIONS="--unhandled-rejections=strict" yarn jest
 	NODE_OPTIONS="--unhandled-rejections=strict" yarn jest --config __tests__/jest.playwright.config.js
+
+.PHONY: prepare
+prepare: ts pretty-write
+	$(MAKE) test
+
+.PHONY: ci
+ci: ts pretty-check
+	$(MAKE) test
