@@ -9,14 +9,14 @@ import logger from '../logger'
  * There is no valid reason to have more than one driver instances per express app
  */
 const appSet = new Set()
-const noop = () => {}
+const asyncNoop = async () => {}
 
 class ExpressDriver implements Driver {
   private isActive: boolean
   private app: express.Application
   private env: Record<string, string>
-  private onRequestHandler: OnRequestHandler
-  private onResponseHandler: OnResponseHandler
+  private onRequestHandler?: OnRequestHandler
+  private onResponseHandler?: OnResponseHandler
 
   constructor({ app, env }: { app: express.Application; env: Record<string, string> }) {
     logger.debug(`instantiating new driver`)
@@ -90,7 +90,7 @@ class ExpressDriver implements Driver {
         logger.debug(`realUrl "${realUrl}"`)
 
         if (this.isActive) {
-          this.onRequestHandler(driverReq)
+          this.onRequestHandler?.(driverReq)
 
           try {
             const resolved = await onRespondPromise
@@ -100,7 +100,7 @@ class ExpressDriver implements Driver {
             if ('response' in resolved) {
               const { response } = resolved
               sendResp = response
-              this.onResponseHandler({
+              this.onResponseHandler?.({
                 request,
                 response: {
                   ...response,
@@ -115,7 +115,7 @@ class ExpressDriver implements Driver {
               sendResp = realResponse
               // const t2 = Date.now()
               logger.debug(`realResponse`, realResponse)
-              this.onResponseHandler({
+              this.onResponseHandler?.({
                 request,
                 response: {
                   ...realResponse,
@@ -154,7 +154,7 @@ class ExpressDriver implements Driver {
     return async () => {
       this.setRequestInterception(false)
       appSet.delete(this.app)
-      this.onRequestHandler = noop
+      this.onRequestHandler = asyncNoop
     }
   }
 

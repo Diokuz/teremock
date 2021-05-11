@@ -49,13 +49,13 @@ class PlaywrightDriver implements Driver {
   }
 
   public async onRequest(fn: OnRequestHandler) {
-    const handler = (route: Route) => {
+    const handler = async (route: Route) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       loggerTrace(`${route.request().url()} ← page.on('request') fired`)
 
       const { request, abort, next, respond } = extractPlaywrightRequest(route, timestampWithOrder)
 
-      fn({ request, abort, next, respond })
+      await fn({ request, abort, next, respond })
     }
 
     await this.page.route(this._routeUrl, handler)

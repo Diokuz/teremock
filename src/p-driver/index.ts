@@ -52,12 +52,12 @@ class PuppeteerDriver implements Driver {
     }
 
     // Intercepting all requests and respinding with mocks
-    await this.page.on('request', handler)
+    this.page.on('request', handler)
 
     return async () => {
       await this.setRequestInterception(false)
       pagesSet.delete(this.page)
-      await this.page.off('request', handler)
+      this.page.off('request', handler)
     }
   }
 

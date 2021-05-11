@@ -12,9 +12,7 @@
     "sourceMap": false,
     "declaration": false,
     "resolveJsonModule": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
-    "strictFunctionTypes": true,
+    "strict": true,
     "importHelpers": true,
     "skipLibCheck": true,
     "downlevelIteration": true

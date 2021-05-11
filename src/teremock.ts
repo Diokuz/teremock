@@ -8,7 +8,7 @@ import FileStorage from './storage'
 import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
-import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor } from './utils'
+import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor, AsyncPendingQueue } from './utils'
 import PuppeteerDriver from './p-driver'
 import { DEFAULT_OPTIONS } from './consts'
 
@@ -20,7 +20,7 @@ function noop() {}
 
 class Teremock {
   private defaultOptions: Options
-  private extraParams: Options
+  private extraParams?: Partial<Options>
   private options: Options
   private storage: Storage
   /** set of urls of currently active connections. all connections became inactive after response. */
@@ -28,27 +28,34 @@ class Teremock {
   /** set of urls of currently active connections, which cleared only on connections resolve */
   private reqSetRet: Set<string>
   private alive: boolean
-  private reqsPromise: Promise<any>
-  private removeCloseHandler: Function | null
-  private removeRequestHandler: Function | null
-  private removeResponseHandler: Function | null
+  private reqsPromise?: Promise<any>
+  private removeCloseHandler?: Function
+  private removeRequestHandler?: Function
+  private removeResponseHandler?: Function
   protected driver: Driver | undefined
-  private _startPromise: Promise<any> | void
+  private _startPromise?: Promise<any>
   private _resolveReqs: Function
   private _spies: SpyTuple[]
   private _interceptors: Record<string, Interceptor>
   private _matched: Map<string, string[]>
+  private _requestPendingQueue?: AsyncPendingQueue
+  private _responsePendingQueue?: AsyncPendingQueue
 
   constructor(opts?: { storage?: Storage, driver?: Driver }) {
     signale.debug(`new Mocker`)
     this.defaultOptions = Object.assign({}, DEFAULT_OPTIONS)
+    this.options = this.defaultOptions
 
+    this.alive = false
     this._spies = []
     this._interceptors = {}
     this._resolveReqs = noop
     this._matched = new Map()
     this.storage = opts?.storage ?? new FileStorage()
     this.driver = opts?.driver
+
+    this.reqSet = new Set()
+    this.reqSetRet = new Set()
   }
 
   private _onAnyReqStart(req: Request) {
@@ -122,11 +129,8 @@ class Teremock {
     const logParams = Object.assign({}, this.options)
     logger('Mocker starts with resulting params:', logParams)
 
-    this.reqSet = new Set()
-    this.reqSetRet = new Set()
     // Clear on any page close, or sometimes you loose some responses on unload, and `connections` will never resolves
     this.removeCloseHandler = this.driver.onClose?.(() => {
-
       logger('removeCloseHandler', this.reqSet.size)
       if (this.reqSet.size !== 0) {
         if (!this.options.ci) {
@@ -162,6 +166,8 @@ class Teremock {
       }
     })
 
+    this._requestPendingQueue = new AsyncPendingQueue()
+
     const pureResponseHandler = createResponseHandler({
       ...this.options,
       interceptors: this._interceptors,
@@ -171,19 +177,39 @@ class Teremock {
       _onReqsCompleted: () => this._resolveReqs(),
     })
 
+    this._responsePendingQueue = new AsyncPendingQueue()
+
     logger('Handlers created, params validated')
 
     // Intercepting all requests and respinding with mocks
-    this.removeRequestHandler = await this.driver.onRequest((ir) => pureRequestHandler(ir, {
-      ...this.extraParams,
-      interceptors: this._interceptors,
-    }))
+    this.removeRequestHandler = await this.driver.onRequest(async (ir) => {
+      // driver may calls onRequest callback synchronously,
+      // we using here AsyncPendingQueue who can track pending promises
+      try {
+        await this._requestPendingQueue!.add(pureRequestHandler(ir, {
+          ...this.extraParams,
+          interceptors: this._interceptors,
+        }))
+      } catch (e) {
+        signale.error(`There is error in request handler:`)
+        signale.error(e)
+      }
+    })
 
     // Writing mocks on real responses to filesystem
-    this.removeResponseHandler = await this.driver.onResponse((ir) => pureResponseHandler(ir, {
-      ...this.extraParams,
-      interceptors: this._interceptors,
-    }))
+    this.removeResponseHandler = await this.driver.onResponse(async (ir) => {
+      // driver may calls onResponse callback synchronously,
+      // we using here AsyncPendingQueue who can track pending promises
+      try {
+        await this._responsePendingQueue!.add(pureResponseHandler(ir, {
+          ...this.extraParams,
+          interceptors: this._interceptors,
+        }))
+      } catch (e) {
+        signale.error(`There is error in response handler:`)
+        signale.error(e)
+      }
+    })
 
     logger('_startPromise about to resolve (Request interception enabled, listeners added)')
 
@@ -325,6 +351,15 @@ class Teremock {
     logger('`Start` promise was resolved, `connections` promise was resolved or rejected')
 
     clearTimeout(t1)
+
+    const requestHandlerErrorsCount = await this._requestPendingQueue?.awaitPending()
+    if (requestHandlerErrorsCount) {
+      throw new Error(`There were ${requestHandlerErrorsCount} errors in the request handler. See error output above.`)
+    }
+    const responseHandlerErrorsCount = await this._responsePendingQueue?.awaitPending()
+    if (responseHandlerErrorsCount) {
+      throw new Error(`There were ${responseHandlerErrorsCount} errors in the response handler. See error output above.`)
+    }
 
     await this.removeCloseHandler?.()
     await this.removeRequestHandler?.()

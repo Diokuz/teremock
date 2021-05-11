@@ -5,21 +5,21 @@ import { UserOptions, UserInterceptor } from '../types'
 export const DEFAULT_WS_PORT = 27495
 
 class Tes {
-  private socket: WebSocket
+  private socket?: WebSocket
   private send(method: string, data: any) {
-    this.socket.send(JSON.stringify({ method, data }))
+    this.socket?.send(JSON.stringify({ method, data }))
   }
   private handle(str: string) {
     const { message } = JSON.parse(str)
 
     switch (message) {
       case 'started':
-        this.startResolve()
+        this.startResolve?.()
         break
     }
   }
-  private startResolve: () => void
-  private startPromise: Promise<void>
+  private startResolve?: () => void
+  private startPromise?: Promise<void>
 
   public async start(options: UserOptions & { wsUrl?: string } = {}): Promise<void> {
     const { wsUrl, ...tOptions } = options
@@ -52,18 +52,18 @@ class Tes {
 
   public async add(userInterceptor: UserInterceptor) {
     await this.startPromise
-    this.socket.send(JSON.stringify({ method: 'add', data: userInterceptor }))
+    this.socket!.send(JSON.stringify({ method: 'add', data: userInterceptor }))
 
     return () => {
-      this.socket.send(JSON.stringify({ method: 'remove', data: userInterceptor }))
+      this.socket!.send(JSON.stringify({ method: 'remove', data: userInterceptor }))
     }
   }
 
   public async stop() {
     // @todo stopPromise, and other promises too. Need some approach here.
     await this.startPromise
-    this.socket.send(JSON.stringify({ method: 'stop' }))
-    this.socket.close()
+    this.socket!.send(JSON.stringify({ method: 'stop' }))
+    this.socket!.close()
   }
 }
 

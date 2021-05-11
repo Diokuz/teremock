@@ -41,20 +41,20 @@ export async function extractPuppeteerRequest(
 
   return {
     request,
-    abort: (errorCode?: DriverErrorCode) => puppeteerRequest.abort(errorCode),
-    next: (interceptor: Interceptor) => {
+    abort: async (errorCode?: DriverErrorCode) => await puppeteerRequest.abort(errorCode),
+    next: async (interceptor: Interceptor) => {
       logger(`continue() call`)
       // @ts-expect-error
       puppeteerRequest.__meta.interceptor = interceptor
       loggerTrace(`${request.url} ← request.continue()`)
-      puppeteerRequest.continue()
+      await puppeteerRequest.continue()
     },
-    respond: (response: Response, interceptor: Interceptor) => {
+    respond: async (response: Response, interceptor: Interceptor) => {
       logger(`respond() call`)
       // @ts-expect-error
       puppeteerRequest.__meta.interceptor = interceptor
       loggerTrace(`${request.url} ← request.respond(...)`)
-      puppeteerRequest.respond(response)
+      await puppeteerRequest.respond(response)
     },
   }
 }

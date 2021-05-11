@@ -22,7 +22,7 @@ async function sleep(time: number) {
 }
 
 export interface BeforeRespondArg {
-  respond: (response: Response, interceptor: Interceptor) => void
+  respond: (response: Response, interceptor: Interceptor) => Promise<void>
   request: Request
   response: DefResponse
   responseOverrides?: Partial<Response>
@@ -81,7 +81,7 @@ async function beforeRespond({
     resultResponse = rest
   }
 
-  respond(resultResponse, interceptor)
+  await respond(resultResponse, interceptor)
 }
 
 export default function createHandler(initialParams: Params) {
@@ -108,7 +108,7 @@ export default function createHandler(initialParams: Params) {
       signale.warn(`see https://github.com/diokuz/teremock#interceptor for details`)
 
       logger('» interceptor not found, aborting')
-      abort('aborted')
+      await abort('aborted')
       return
     }
 
@@ -122,7 +122,7 @@ export default function createHandler(initialParams: Params) {
     if (interceptor.pass) {
       loggerTrace(`${request.url} ← passing to real server`)
       mog(`» interceptor.pass is true, sending it to real server next(interceptor)`)
-      next(interceptor)
+      await next(interceptor)
       return
     }
 
@@ -176,7 +176,7 @@ export default function createHandler(initialParams: Params) {
         signale.warn(`mock file not found in ci mode, url is "${request.url}"`)
       } else {
         mog('» about to next()...')
-        next(interceptor)
+        await next(interceptor)
       }
     }
   }

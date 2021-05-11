@@ -18,8 +18,6 @@ describe('teremock playwright', () => {
   let teremock: Teremock
 
   beforeAll(async () => {
-    teremock = new Teremock({ driver: new PlaywrightDriver({ page }) })
-
     const serverPath = path.resolve(__dirname, 'server')
 
     await setupDevServer({
@@ -34,16 +32,23 @@ describe('teremock playwright', () => {
   })
 
   describe('basic', () => {
-    it('generates mocks', async () => {
-      const mockFilePath = path.resolve(__dirname, '../__teremocks-playwright__/localhost-api/get-q-abcd.json')
-
-      rimraf.sync(path.resolve(__dirname, '../__teremocks-playwright__'))
-
+    beforeEach(async () => {
+      teremock = new Teremock({ driver: new PlaywrightDriver({ page }) })
       // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
       await teremock.start({
         page,
         wd: path.resolve(process.cwd(), '__teremocks-playwright__')
       })
+    })
+
+    afterEach(async () => {
+      await teremock.stop()
+    })
+
+    it('generates mocks', async () => {
+      const mockFilePath = path.resolve(__dirname, '../__teremocks-playwright__/localhost-api/get-q-abcd.json')
+
+      rimraf.sync(path.resolve(__dirname, '../__teremocks-playwright__'))
       await page.goto('http://localhost:3000')
 
       expect(fs.existsSync(mockFilePath)).toBe(false)
@@ -57,6 +62,35 @@ describe('teremock playwright', () => {
 
       // * At that point there must be mock files
       expect(fs.existsSync(mockFilePath)).toBe(true)
+    })
+  })
+
+  describe('async', () => {
+    it('should handle interceptor\'s async response', async () => {
+      teremock = new Teremock({ driver: new PlaywrightDriver({ page }) })
+      // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
+      await teremock.start({
+        page,
+        wd: path.resolve(process.cwd(), '__teremocks-playwright__'),
+        interceptors: {
+          asyncApi: {
+            url: 'api',
+            response: async (req) => {
+              await sleep(150)
+              return {
+                status: 200,
+                headers: {},
+                body: req.query,
+              }
+            },
+          }
+        },
+        awaitConnectionsOnStop: false,
+      })
+      await page.goto('http://localhost:3000')
+      await page.click('#button')
+
+      await teremock.stop()
     })
   })
 })

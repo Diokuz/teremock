@@ -1,10 +1,12 @@
 import { URL } from 'url'
 import debug from 'debug'
-import { Request, Response, Options, UserOptions, Interceptor, UserInterceptor } from './types'
+import isMatch from 'lodash.ismatch'
+
 import { DEFAULT_INTERCEPTOR_CAPTURE } from './consts'
 import { humanize } from './words-hash'
 import defaultGetMockId from './mock-id'
-import isMatch from 'lodash.ismatch'
+
+import type { Request, Response, Options, UserOptions, Interceptor, UserInterceptor } from './types'
 
 const loggerint = debug('teremock:utils:interceptor')
 const loggerBody = debug('teremock:utils:bodymatched')
@@ -253,4 +255,24 @@ export const getBody = (body: Object | string | undefined | null): string | unde
   }
 
   return JSON.stringify(body)
+}
+
+export class AsyncPendingQueue {
+  protected allSettledPromise: Promise<unknown> = Promise.resolve()
+  protected _errorsCount = 0
+
+  add<T>(promise: Promise<T>): Promise<T> {
+    const catchedPromise = promise.catch(() => {
+      this._errorsCount += 1
+    })
+
+    this.allSettledPromise = Promise.all([this.allSettledPromise, catchedPromise]).then(() => null)
+
+    return promise
+  }
+
+  async awaitPending(): Promise<number> {
+    await this.allSettledPromise
+    return this._errorsCount
+  }
 }
