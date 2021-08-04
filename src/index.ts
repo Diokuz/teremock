@@ -5,3 +5,5 @@ const teremock = new Teremock()
 
 export { Teremock, PlaywrightDriver }
 export default teremock
+
+export * from './types'
