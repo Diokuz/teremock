@@ -136,13 +136,21 @@ export function isBodyMatched(value: any, request: Request) {
   return objectsIsMatch
 }
 
+// problem with decoding string, where spaces are encoded as "+" - it is correct for specification
+// x-www-form-urlencoded content type https://www.rfc-editor.org/rfc/rfc1866,
+// but JS decodeUri function doesn't decode it. same function exist in third-party libraries:
+// https://chromium.googlesource.com/chromium/src.git/+/62.0.3178.1/third_party/google_input_tools/third_party/closure_library/closure/goog/string/string.js?autodive=0%2F%2F%2F%2F#486
+function decodeUriWithSpaces (encodedStr: string) {
+  return decodeURIComponent(encodedStr.replace(/\+/g, ' '))
+}
+
 export function getFormData(body: Request['body']): Record<string, string> {
   const result: Record<string, string> = {}
   if (typeof body === 'string') {
     const params = body.split('&')
     params.forEach(param => {
       const paramsPart = param.split('=')
-      result[decodeURIComponent(paramsPart[0])] = decodeURIComponent(paramsPart[1])
+      result[decodeUriWithSpaces(paramsPart[0])] = decodeUriWithSpaces(paramsPart[1])
     })
   }
 
