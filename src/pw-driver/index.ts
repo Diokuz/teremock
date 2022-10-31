@@ -62,7 +62,13 @@ class PlaywrightDriver implements Driver {
 
     return async () => {
       pagesSet.delete(this.page)
-      await this.page.unroute(this._routeUrl, handler)
+      try {
+        await this.page.unroute(this._routeUrl, handler)
+      } catch (e) {
+        if (e.message.indexOf('has been closed') === -1) {
+          throw e
+        }
+      }
     }
   }
 
