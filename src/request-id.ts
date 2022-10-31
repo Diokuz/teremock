@@ -6,7 +6,7 @@ import { URL } from 'url'
 // @ts-ignore
 import queryString from 'query-string'
 import { humanize } from './words-hash'
-import { Naming, Headers, List } from './types'
+import type { Naming, Headers, List } from './types'
 
 // Length of query string after which three-words-naming is switching on
 const MAX_QUERY_NAME_LENGTH = 25

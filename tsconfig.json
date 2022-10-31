@@ -13,6 +13,7 @@
     "sourceMap": false,
     "declaration": false,
     "resolveJsonModule": true,
+    "importsNotUsedAsValues": "error",
     "strict": true,
     "importHelpers": true,
     "skipLibCheck": true,
