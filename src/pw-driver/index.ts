@@ -18,10 +18,11 @@ const redirectCodes = [301, 302, 303, 305, 307, 308]
 
 class PlaywrightDriver implements Driver {
   private page: Page
+  private noParseResponseUrls: string[]
   private seenRedirects: Map<string, number>
   private _routeUrl = () => true
 
-  constructor({ page }: { page: Page }) {
+  constructor({ page, noParseResponseUrls = [] }: { page: Page, noParseResponseUrls?: string[] }) {
     logger.debug(`instantiating new playwright driver`)
 
     if (!page) {
@@ -35,6 +36,7 @@ class PlaywrightDriver implements Driver {
     }
 
     this.seenRedirects = new Map()
+    this.noParseResponseUrls = noParseResponseUrls
 
     this.page = page
     pagesSet.add(page)
@@ -76,6 +78,10 @@ class PlaywrightDriver implements Driver {
     const handler = async (interceptedResponse: Response) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()
+      if (this.noParseResponseUrls.some((urlPart: string) => url.indexOf(urlPart) !== -1)) {
+        logger.debug(`Response from url ${url} will not be parsed`)
+        return
+      }
 
       if (redirectCodes.indexOf(interceptedResponse.status()) !== -1) {
         // see https://playwright.dev/docs/api/class-page#pagerouteurl-handler
