@@ -91,14 +91,15 @@ class PlaywrightDriver implements Driver {
         this.seenRedirects.set(url, this.seenRedirects.get(url)! - 1)
         return
       }
-      if (this.noParseResponseUrls.some((urlPart: string) => url.indexOf(urlPart) !== -1)) {
-        logger.debug(`Response from url ${url} will not be parsed`)
-        return
-      }
+
+      const noParseResponse = this.noParseResponseUrls.some((urlPart: string) => url.indexOf(urlPart) !== -1)
 
       loggerTrace(`${url} → page.on('response') fired`)
 
-      await fn(await extractPlaywrightResponse(interceptedResponse, timestampWithOrder))
+      await fn(await extractPlaywrightResponse(interceptedResponse, {
+        ...timestampWithOrder,
+        noParseResponse
+      }))
 
       loggerTrace(`${url} → finish`)
     }
