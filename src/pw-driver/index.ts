@@ -78,10 +78,6 @@ class PlaywrightDriver implements Driver {
     const handler = async (interceptedResponse: Response) => {
       const timestampWithOrder = getTimeStampWithStrictOrder()
       const url = interceptedResponse.request().url()
-      if (this.noParseResponseUrls.some((urlPart: string) => url.indexOf(urlPart) !== -1)) {
-        logger.debug(`Response from url ${url} will not be parsed`)
-        return
-      }
 
       if (redirectCodes.indexOf(interceptedResponse.status()) !== -1) {
         // see https://playwright.dev/docs/api/class-page#pagerouteurl-handler
@@ -93,6 +89,10 @@ class PlaywrightDriver implements Driver {
       }
       if (this.seenRedirects.get(url)) {
         this.seenRedirects.set(url, this.seenRedirects.get(url)! - 1)
+        return
+      }
+      if (this.noParseResponseUrls.some((urlPart: string) => url.indexOf(urlPart) !== -1)) {
+        logger.debug(`Response from url ${url} will not be parsed`)
         return
       }
 
