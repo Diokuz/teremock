@@ -149,6 +149,7 @@ export interface Driver {
 export interface ExtractDriverReqResOptions {
   order: number
   timestamp: number
+  noParseResponse?: boolean
 }
 
 export type EventInfo = {

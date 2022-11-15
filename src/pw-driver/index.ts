@@ -18,10 +18,11 @@ const redirectCodes = [301, 302, 303, 305, 307, 308]
 
 class PlaywrightDriver implements Driver {
   private page: Page
+  private noParseResponseUrls: string[]
   private seenRedirects: Map<string, number>
   private _routeUrl = () => true
 
-  constructor({ page }: { page: Page }) {
+  constructor({ page, noParseResponseUrls = [] }: { page: Page, noParseResponseUrls?: string[] }) {
     logger.debug(`instantiating new playwright driver`)
 
     if (!page) {
@@ -35,6 +36,7 @@ class PlaywrightDriver implements Driver {
     }
 
     this.seenRedirects = new Map()
+    this.noParseResponseUrls = noParseResponseUrls
 
     this.page = page
     pagesSet.add(page)
@@ -62,7 +64,13 @@ class PlaywrightDriver implements Driver {
 
     return async () => {
       pagesSet.delete(this.page)
-      await this.page.unroute(this._routeUrl, handler)
+      try {
+        await this.page.unroute(this._routeUrl, handler)
+      } catch (e) {
+        if (e.message.indexOf('has been closed') === -1) {
+          throw e
+        }
+      }
     }
   }
 
@@ -84,9 +92,14 @@ class PlaywrightDriver implements Driver {
         return
       }
 
+      const noParseResponse = this.noParseResponseUrls.some((urlPart: string) => url.indexOf(urlPart) !== -1)
+
       loggerTrace(`${url} → page.on('response') fired`)
 
-      await fn(await extractPlaywrightResponse(interceptedResponse, timestampWithOrder))
+      await fn(await extractPlaywrightResponse(interceptedResponse, {
+        ...timestampWithOrder,
+        noParseResponse
+      }))
 
       loggerTrace(`${url} → finish`)
     }

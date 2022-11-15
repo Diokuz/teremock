@@ -15,23 +15,28 @@ export async function extractPlaywrightResponse(
   let requestBody: string | Record<string, any> | null
   let responseBody: string | Record<string, any> | undefined
 
-  try {
-    responseBody = await playwrightResponse.json()
-  } catch (e) {
-    logger('« playwrightResponse.json() error:', e.message)
+  if (!options.noParseResponse) {
+    try {
+      responseBody = await playwrightResponse.json()
+    } catch (e) {
+      logger('« playwrightResponse.json() error:', e.message)
+
+      try {
+        responseBody = await playwrightResponse.text()
+        logger(`« response body starts with: ${responseBody?.substr(0, 20)}`)
+      } catch (e) {
+        logger('« playwrightResponse.text() error:', e.message)
+      }
+    }
 
     try {
-      responseBody = await playwrightResponse.text()
-      logger(`« response body starts with: ${responseBody?.substr(0, 20)}`)
+      requestBody = JSON.parse(playwrightRequest.postData() as string)
     } catch (e) {
-      logger('« playwrightResponse.text() error:', e.message)
+      requestBody = playwrightRequest.postData()
     }
-  }
-
-  try {
-    requestBody = JSON.parse(playwrightRequest.postData() as string)
-  } catch (e) {
-    requestBody = playwrightRequest.postData()
+  } else {
+    responseBody = ''
+    requestBody = ''
   }
 
   // @ts-expect-error
