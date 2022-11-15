@@ -1,8 +1,8 @@
 import got from 'got'
-import express from 'express'
+import type express from 'express'
 import { extractExpressRequest } from './request'
 import { extractGotResponse, ExtractedResponse } from './response'
-import { Driver, OnRequestHandler, OnResponseHandler, Request } from '../types'
+import type { Driver, OnRequestHandler, OnResponseHandler, Request } from '../types'
 import logger from '../logger'
 
 /**
