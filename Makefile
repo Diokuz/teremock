@@ -1,8 +1,7 @@
 .PHONY: ts
 ts:
 	rm -r dist || true
-	cp -r src dist
-	yarn pnpify tsc
+	yarn tsc
 
 .PHONY: pretty-write
 pretty-write:
