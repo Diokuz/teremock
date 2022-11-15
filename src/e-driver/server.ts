@@ -2,10 +2,11 @@ import express from 'express'
 import WebSocket from 'ws'
 import http from 'http'
 import logger from '../logger'
-import { UserOptions } from '../types'
 import { DEFAULT_WS_PORT } from './index'
 import ExpressDriver from './driver'
 import { Teremock } from '..'
+
+import type { UserOptions } from '../types'
 
 type ExpressUserOptions = UserOptions & {
   app: express.Application

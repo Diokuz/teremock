@@ -1,6 +1,6 @@
 // client side code
 
-import { UserOptions, UserInterceptor } from '../types'
+import type { UserOptions, UserInterceptor } from '../types'
 
 export const DEFAULT_WS_PORT = 27495
 

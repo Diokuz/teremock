@@ -1,5 +1,5 @@
 import debug from 'debug'
-import { ExtractedResponse } from './response'
+import type { ExtractedResponse } from './response'
 
 import type { Request, Response, DriverRequest, Interceptor } from '../types'
 import type { Express } from 'express'
