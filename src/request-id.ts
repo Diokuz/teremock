@@ -129,13 +129,11 @@ const getRequestId = (params: Params) => {
   queryBlacklist.forEach((param) => urlObj.searchParams.delete(param))
   let baseStr = urlObj.toString() + body
 
-  const entries = [...urlObj.searchParams]
-
-  const queryStr: string = entries.reduce((acc: string[], [key, value]) => {
-    acc.push(`${key}-${value}`)
-
-    return acc
-  }, []).join('-')
+  const entries = []
+  for (const [key, value] of urlObj.searchParams) {
+    entries.push(`${key}-${value}`)
+  }
+  const queryStr: string = entries.join('-')
 
   let queryStrAscii = queryStr.toLowerCase().replace(/[^a-z0-9-]/g, '')
 
