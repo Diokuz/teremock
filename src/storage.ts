@@ -78,7 +78,7 @@ export default class FileStorage implements Storage {
       const data = JSON.parse(await fs.readFile(absFileName, 'utf8'))
       loggerGet(`successfully read the file ${absFileName}`)
       return data
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         loggerGet(`fail to read the file (ENOENT) ${absFileName}`, err.message)
       } else {

@@ -6,12 +6,6 @@ const waitPort = require('wait-port')
 const signale = require('signale')
 const mocker = require('../../').default
 
-async function sleep(time) {
-  return new Promise((resolve, reject) => {
-    setTimeout(resolve, time)
-  })
-}
-
 const mocksDir = path.resolve(__dirname, '__teremocks__')
 let page
 let server

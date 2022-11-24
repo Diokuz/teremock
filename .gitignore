@@ -11,3 +11,5 @@ coverage
 dist
 .yarn
 .yarnrc
+/test-results
+/playwright-report

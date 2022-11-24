@@ -9,7 +9,7 @@ import signale from './logger'
 import createRequestHandler from './handleRequest'
 import createResponseHandler from './handleResponse'
 import { isInterceptorMatched, userOptionsToOptions, userInterceptorToInterceptor, AsyncPendingQueue } from './utils'
-import PuppeteerDriver from './p-driver'
+import PlaywrightDriver from './pw-driver'
 import { DEFAULT_OPTIONS } from './consts'
 
 import type { Options, UserOptions, Driver, Storage, UserInterceptor, Interceptor, SpyTuple, Spy, Request, Response } from './types'
@@ -120,7 +120,7 @@ class Teremock {
     this.alive = true
     this.options = userOptionsToOptions(this.defaultOptions, userOptions)
     this.options.wd && this.storage.setWd?.(this.options.wd)
-    this.driver = this.driver ?? new PuppeteerDriver({ page: userOptions.page })
+    this.driver = this.driver ?? new PlaywrightDriver({ page: userOptions.page })
     await this.driver.setRequestInterception(true)
     this._spies = []
     this._interceptors = this.options.interceptors
@@ -128,22 +128,6 @@ class Teremock {
 
     const logParams = Object.assign({}, this.options)
     logger('Mocker starts with resulting params:', logParams)
-
-    // Clear on any page close, or sometimes you loose some responses on unload, and `connections` will never resolves
-    this.removeCloseHandler = this.driver.onClose?.(() => {
-      logger('removeCloseHandler', this.reqSet.size)
-      if (this.reqSet.size !== 0) {
-        if (!this.options.ci) {
-          signale.error(`Some connections was not completed, but navigation happened.`)
-          signale.error(`That is bad, mkay? Because you have a race: server response and navigation`)
-          signale.error(`That will lead to heisenberg MONOFO errors in case when response will win the race`)
-          signale.error(`Alive connections:\n${[...this.reqSet]}`)
-        }
-        this.reqSet.clear()
-        this._resolveReqs()
-      }
-      this.stop({ safe: true })
-    })
 
     const pureRequestHandler = createRequestHandler({
       ...this.options,
@@ -342,7 +326,7 @@ class Teremock {
     if (this.options.awaitConnectionsOnStop) {
       try {
         await this.connections()
-      } catch (err) {
+      } catch (err: any) {
         signale.error(`this.connections was rejected with error. Continue...`, err)
         failed = err
       }
