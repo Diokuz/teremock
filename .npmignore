@@ -24,3 +24,8 @@ tsconfig.json
 .yarnrc
 /src
 /dist
+playwright.config.ts
+rollup.config.mjs
+.github
+/express
+/server
