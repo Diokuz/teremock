@@ -14,7 +14,7 @@ pretty-check:
 .PHONY: test
 test:
 	NODE_OPTIONS="--unhandled-rejections=strict" yarn jest
-	NODE_OPTIONS="--unhandled-rejections=strict" yarn jest --config __tests__/jest.playwright.config.js
+	NODE_OPTIONS="--unhandled-rejections=strict" yarn playwright test
 
 .PHONY: prepare
 prepare: ts pretty-write

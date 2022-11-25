@@ -5,6 +5,7 @@
     "headers": {
       "referer": "http://localhost:3000/"
     },
+    "body": null,
     "resourceType": "fetch"
   },
   "response": {

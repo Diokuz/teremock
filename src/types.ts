@@ -1,5 +1,6 @@
-import type { ErrorCode as PErrorCode } from 'puppeteer'
 export type Headers = Record<string, string>
+
+type PErrorCode = any
 
 export interface Request {
   url: string
@@ -143,7 +144,6 @@ export interface Driver {
   setRequestInterception: (switchOn: boolean) => void
   onRequest: (fn: OnRequestHandler) => Promise<Function>
   onResponse: (fn: OnResponseHandler) => Promise<Function>
-  onClose: (fn: any) => Function
 }
 
 export interface ExtractDriverReqResOptions {

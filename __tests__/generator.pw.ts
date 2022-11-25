@@ -1,13 +1,11 @@
 import fs from 'fs'
 import path from 'path'
-import puppeteer from 'puppeteer'
+import { expect, test as base } from '@playwright/test'
 import rimraf from 'rimraf'
 import sinon from 'sinon'
-import teremock, { Teremock } from '../src'
+import { Teremock } from '../src'
 import { parseUrl } from '../src/utils'
-import { setup as setupDevServer, teardown as teardownDevServer } from 'jest-process-manager'
 
-import type { Page, Browser } from 'puppeteer'
 import type { Request } from '../src/types'
 
 async function sleep(time: number): Promise<void> {
@@ -16,164 +14,130 @@ async function sleep(time: number): Promise<void> {
   })
 }
 
-describe('teremock puppeteer', () => {
-  let page: Page
-  let browser: Browser
+const test = base.extend<{ teremock: Teremock }, { cleanup: void }>({
+  teremock: async ({ page }, use) => {
+    const teremock = new Teremock()
+    await use(teremock)
+    await teremock.stop()
+  },
 
-  beforeAll(async () => {
-    const serverPath = path.resolve(__dirname, 'server')
-    await setupDevServer({
-      command: `node ${serverPath}`,
-      port: 3000,
-      usedPortAction: 'kill',
-    })
+  cleanup: [async ({}, use) => {
+    rimraf.sync(path.resolve(process.cwd(), '__teremocks__'))
+    rimraf.sync(path.resolve(process.cwd(), '__teremocks-post__'))
+    // rimraf.sync(path.resolve(__dirname, '../__teremocks-post__'))
+    await use()
+  }, { scope: 'worker', auto: true }]
+})
 
-    browser = await puppeteer.launch(process.env.D ? {
-      headless: false,
-      slowMo: 80,
-      devtools: true,
-    } : {})
+test('generates mocks', async ({ page, teremock }) => {
+  const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-q-abcd.json')
 
-    page = await browser.newPage()
+  await page.goto('http://localhost:3000')
+  await teremock.start({ page, ci: false })
+
+  expect(fs.existsSync(mockFilePath)).toBe(false)
+
+  // * Typing `abcd` → invoking request to `/api`
+  await page.locator('#input').type('abcd', { delay: 100 })
+
+  // * At that point there must be mock files
+  await expect.poll(() => fs.existsSync(mockFilePath)).toBe(true)
+})
+
+test('generates mocks to utf-8', async ({ page, teremock }) => {
+  const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-bark-seven-emma.json')
+
+  await page.goto('http://localhost:3000')
+  await teremock.start({ page, ci: false })
+
+  expect(fs.existsSync(mockFilePath)).toBe(false)
+
+  await page.locator('#input').type('фt', { delay: 100 })
+
+  await expect.poll(() => fs.existsSync(mockFilePath)).toBe(true)
+  expect(JSON.parse(fs.readFileSync(mockFilePath, { encoding: 'utf-8' })).response.body.suggest).toBe('фt')
+})
+
+test('generates mocks for POST request', async ({ page, teremock }) => {
+  const mockFilePath = path.resolve(__dirname, '../__teremocks-post__/localhost-api/post-jupiter-kitten-iowa.json')
+
+  await page.goto('http://localhost:3000')
+
+  // * Starting mocker
+  await teremock.start({
+    page,
+    wd: '__teremocks-post__',
   })
 
-  afterAll(async () => {
-    await browser.close()
-    await teardownDevServer()
-  })
+  expect(fs.existsSync(mockFilePath)).toBe(false)
 
-  describe('basic', () => {
-    it('generates mocks', async () => {
-      const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-q-abcd.json')
+  // * Typing `abcd` → invoking POST request to `/api`
+  await page.locator('#input-post').type('abcd', { delay: 100 })
 
-      rimraf.sync(path.resolve(__dirname, '../__teremocks__'))
+  // * At that point there must be mock files
+  expect(fs.existsSync(mockFilePath)).toBe(true)
+})
 
-      // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
-      await teremock.start({ page })
-      await page.goto('http://localhost:3000')
+test('uses existing mocks', async ({ page, teremock }) => {
+  await page.goto('http://localhost:3000')
 
-      expect(fs.existsSync(mockFilePath)).toBe(false)
+  // * Starting mocker
+  await teremock.start({ page, ci: false })
 
-      // * Typing `abcd` → invoking request to `/api`
-      await page.click('#input')
-      await page.keyboard.type('abcd', { delay: 100 })
+  // * Typing `a` → invoking request to `/api`, which are mocked
+  await page.click('#input')
+  await page.keyboard.type('a')
 
-      // * wait for all connections to complete
-      await teremock.connections()
-      // @todo fix connections and write tests already!
-      await sleep(500)
+  // * Checking suggest in the div
+  await sleep(100)
+  const text = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
+  expect(text).toBe('200 example')
+})
 
-      // * At that point there must be mock files
-      expect(fs.existsSync(mockFilePath)).toBe(true)
-    })
+test.describe('teremock puppeteer', async () => {
 
-    it('generates mocks to utf-8', async () => {
-      const mockFilePath = path.resolve(__dirname, '../__teremocks__/localhost-api/get-bark-seven-emma.json')
+  test.describe('basic', async () => {
 
-      rimraf.sync(mockFilePath)
 
-      // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
-      await teremock.start({ page })
-      await page.goto('http://localhost:3000')
 
-      expect(fs.existsSync(mockFilePath)).toBe(false)
 
-      // * Typing `фt` → invoking request to `/api`
-      // (page.keyboard.type does not invokes keyup handler for cyrillic letters for reasons unknown)
-      await page.click('#input')
-      await page.keyboard.type('фt')
 
-      // * wait for all connections to complete
-      await teremock.connections()
-      // @todo fix connections and write tests already!
-      await sleep(500)
 
-      // * At that point there must be mock files
-      expect(fs.existsSync(mockFilePath)).toBe(true)
-      expect(JSON.parse(fs.readFileSync(mockFilePath, { encoding: 'utf-8' })).response.body.suggest).toBe('фt')
-    })
 
-    it('generates mocks for POST request', async () => {
-      const mockFilePath = path.resolve(__dirname, '../__teremocks-post__/localhost-api/post-jupiter-kitten-iowa.json')
 
-      rimraf.sync(path.resolve(__dirname, '../__teremocks-post__'))
-      await teremock.stop()
-      await page.goto('http://localhost:3000')
+//     it.skip('Resolves `connections` even when no requests from capture.urls were made', async ({ page }) => {
+//       await teremock.stop()
+//       await page.goto('http://localhost:3000')
+//       const inter = { url: 'nflaiweuhfawejfaiosejfa;sdif' }
 
-      // * Starting mocker
-      await teremock.start({
-        page,
-        wd: '__teremocks-post__',
-      })
+//       // * Starting mocker with void capture.urls
+//       await teremock.start({
+//         page,
+//         interceptors: {
+//           __teremock_buildin_capture: inter,
+//           __teremock_buildin_pass: inter,
+//         }
+//       })
 
-      expect(fs.existsSync(mockFilePath)).toBe(false)
+//       // * Typing `a` → invoking request to `/api`, which is not mocked
+//       await page.click('#input')
+//       await page.keyboard.type('a')
 
-      // * Typing `abcd` → invoking POST request to `/api`
-      await page.click('#input-post')
-      await page.keyboard.type('abcd', { delay: 10 })
+//       // * Awaiting for real response and its corresponding reaction (text `suggest: example` must appear)
+//       await page.waitForFunction(() => {
+//         // @ts-ignore
+//         return document.querySelector('#suggest').innerText === '200 example'
+//       }, { timeout: 4000 })
 
-      // * wait for all connections to complete
-      await teremock.connections()
+//       // * All connections must resolves after theirs completion
+//       await expect(teremock.connections()).resolves.toEqual(undefined)
+//     })
 
-      // * At that point there must be mock files
-      expect(fs.existsSync(mockFilePath)).toBe(true)
-
-      // * stopping the mocker
-      await teremock.stop()
-    })
-
-    it('uses existing mocks', async () => {
-      await teremock.stop()
-      await page.goto('http://localhost:3000')
-
-      // * Starting mocker
-      await teremock.start({ page })
-
-      // * Typing `a` → invoking request to `/api`, which are mocked
-      await page.click('#input')
-      await page.keyboard.type('a')
-
-      // * Checking suggest in the div
-      await sleep(100)
-      const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
-      expect(text).toBe('200 example')
-
-      await teremock.stop()
-    })
-
-    it.skip('Resolves `connections` even when no requests from capture.urls were made', async () => {
-      await teremock.stop()
-      await page.goto('http://localhost:3000')
-      const inter = { url: 'nflaiweuhfawejfaiosejfa;sdif' }
-
-      // * Starting mocker with void capture.urls
-      await teremock.start({
-        page,
-        interceptors: {
-          __teremock_buildin_capture: inter,
-          __teremock_buildin_pass: inter,
-        }
-      })
-
-      // * Typing `a` → invoking request to `/api`, which is not mocked
-      await page.click('#input')
-      await page.keyboard.type('a')
-
-      // * Awaiting for real response and its corresponding reaction (text `suggest: example` must appear)
-      await page.waitForFunction(() => {
-        // @ts-ignore
-        return document.querySelector('#suggest').innerText === '200 example'
-      }, { timeout: 4000 })
-
-      // * All connections must resolves after theirs completion
-      await expect(teremock.connections()).resolves.toEqual(undefined)
-    })
-
-    it('Resolves `stop` even when no requests from capture.urls were made', async () => {
+    test('Resolves `stop` even when no requests from capture.urls were made', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker with void capture.urls
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * invoking request to `/api`, which is not mocked
       await page.click('#input')
@@ -188,7 +152,7 @@ describe('teremock puppeteer', () => {
       await expect(teremock.stop()).resolves.toEqual(undefined)
     })
 
-    it('do not change the filename when blacklisted query changes', async () => {
+    test('do not change the filename when blacklisted query changes', async ({ page }) => {
       const interceptor = {
         naming: { query: { blacklist: ['baz'] } }
       }
@@ -201,6 +165,7 @@ describe('teremock puppeteer', () => {
       // * Starting mocker - no matter when, because only xhr/fetch requestTypes intercepted by default
       await teremock.start({
         page,
+        ci: false,
         interceptors: { basic: interceptor }
       })
       await page.goto('http://localhost:3000')
@@ -223,31 +188,31 @@ describe('teremock puppeteer', () => {
       await teremock.stop()
     })
 
-    it('teremock.start() after request was made (no __meta in response)', async () => {
+    test('teremock.start() after request was made (no __meta in response)', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * invoking GET request to `/api` with 100 ms ttfb
       await page.click('#button')
 
       // * starting mocker _after_ request was made (but not finished)
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * check old text in the button (before response)
-      const text1 = await page.evaluate(element => element.textContent, await page.$('#button'))
+      const text1 = await page.evaluate(element => element?.textContent, await page.$('#button'))
       expect(text1).toBe('Click to start')
 
       // * await for response
       await sleep(150)
 
       // * check the result of response – it must not be blocked
-      const text2 = await page.evaluate(element => element.textContent, await page.$('#button'))
+      const text2 = await page.evaluate(element => element?.textContent, await page.$('#button'))
       expect(text2).toBe('200 click')
       await teremock.stop()
     })
   })
 
-  describe('options.interceptors', () => {
-    it('capture GET request for /api', async () => {
+  test.describe('options.interceptors', async () => {
+    test('capture GET request for /api', async ({ page }) => {
       await page.goto('http://localhost:3000')
 
       // Custom storage for spying (fs wont be used)
@@ -259,7 +224,7 @@ describe('teremock puppeteer', () => {
       // * Starting mocker with wildcard interceptor
       // @ts-ignore
       const teremock = new Teremock({ storage })
-      await teremock.start({ page, interceptors })
+      await teremock.start({ page, interceptors, ci: false })
 
       // * Invoking GET request to `/api`
       await page.click('#button')
@@ -272,7 +237,7 @@ describe('teremock puppeteer', () => {
       await teremock.stop()
     })
 
-    it('dont capture GET request for /api when methods are ["post"]', async () => {
+    test('dont capture GET request for /api when methods are ["post"]', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // Custom storage for spying (fs wont be used)
@@ -287,7 +252,7 @@ describe('teremock puppeteer', () => {
 
       // * Starting mocker with only `post` interceptor
       // @ts-ignore
-      await teremock.start({ page, storage, interceptors })
+      await teremock.start({ page, storage, interceptors, ci: false })
 
       // * Invoking request to `/api`
       await page.click('#button')
@@ -295,10 +260,9 @@ describe('teremock puppeteer', () => {
 
       // * storage.has must not be called, since the request is not capturable
       expect(storage.has.called).toBe(false)
-      await teremock.stop()
     })
 
-    it('functional interceptor', async () => {
+    test('functional interceptor', async ({ page }) => {
       await page.goto('http://localhost:3000')
 
       const interceptors = {
@@ -315,26 +279,26 @@ describe('teremock puppeteer', () => {
 
       // * Starting mocker with wildcard interceptor
       const teremock = new Teremock()
-      await teremock.start({ page, interceptors })
+      await teremock.start({ page, interceptors, ci: false })
 
       // * Typing `a` → invoking GET request to `/api`, which is mocked with inline mock
       await page.click('#input')
       await page.keyboard.type('i')
       await sleep(35)
 
-      const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      const text = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
 
       expect(text).toBe('200 i-i-i')
       await teremock.stop()
     })
   })
 
-  describe('teremock.spy', () => {
-    it('teremock.spy simple case', async () => {
+  test.describe('teremock.spy', async () => {
+    test('teremock.spy simple case', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
       const spy = teremock.spy({
         url: 'http://localhost:3000/api',
         query: { q: 'ab' },
@@ -352,17 +316,16 @@ describe('teremock puppeteer', () => {
 
       // * Awaiting for suggest innerText, which indicates wether request was blocked
       await sleep(35)
-      const text = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      const text = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
 
       expect(text).toBe('200 world')
-      await teremock.stop()
     })
 
-    it('teremock.spy requests/responseLogs', async () => {
+    test('teremock.spy requests/responseLogs', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
       const spy = teremock.spy({
         url: 'http://localhost:3000/api',
       })
@@ -373,14 +336,13 @@ describe('teremock puppeteer', () => {
       expect(spy.events.length).toBe(1)
       const { requestOrder, responseOrder } = spy.events[0]
       expect(responseOrder && responseOrder > requestOrder).toBe(true)
-      await teremock.stop()
     })
 
-    it('teremock.spy inline mock', async () => {
+    test('teremock.spy inline mock', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * Create inline mock
       teremock.add({
@@ -399,15 +361,13 @@ describe('teremock puppeteer', () => {
 
       expect(spy.called).toBe(true)
       expect(spy.calledOnce).toBe(true)
-
-      await teremock.stop()
     })
 
-    it('teremock.spy formData incorrect', async () => {
+    test('teremock.spy formData incorrect', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * Creating a spy
       const spy = teremock.spy({
@@ -423,41 +383,37 @@ describe('teremock puppeteer', () => {
 
       expect(spy.called).toBe(false)
       expect(spy.calledOnce).toBe(false)
-
-      await teremock.stop()
     })
 
-  it('teremock.spy formData correct', async () => {
-    await page.goto('http://localhost:3000')
-
-    // * Starting mocker
-    await teremock.start({ page })
-
-    // * Creating a spy
-    const spy = teremock.spy({
-      url: 'http://localhost:3000/api',
-      body: {
-        say: 'Hi'
-      }
-    })
-
-    // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
-    await page.click('#button-form')
-    await sleep(50)
-
-    expect(spy.called).toBe(true)
-    expect(spy.calledOnce).toBe(true)
-
-    await teremock.stop()
-  })
-})
-
-  describe('teremock.add', () => {
-    it('teremock.add simple case', async () => {
+    test('teremock.spy formData correct', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
+
+      // * Creating a spy
+      const spy = teremock.spy({
+        url: 'http://localhost:3000/api',
+        body: {
+          say: 'Hi'
+        }
+      })
+
+      // * Clicking button → invoking GET request to `/api`, which is mocked with inline mock
+      await page.click('#button-form')
+      await sleep(50)
+
+      expect(spy.called).toBe(true)
+      expect(spy.calledOnce).toBe(true)
+    })
+  })
+
+  test.describe('teremock.add', async () => {
+    test('teremock.add simple case', async ({ page, teremock }) => {
+      await page.goto('http://localhost:3000')
+
+      // * Starting mocker
+      await teremock.start({ page, ci: false })
 
       // * Create inline mock
       teremock.add({
@@ -469,16 +425,15 @@ describe('teremock puppeteer', () => {
       await page.click('#button')
       await sleep(50)
 
-      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      const text = await page.evaluate(element => element?.textContent, await page.$('#button'))
       expect(text).toBe('200 teremock.add suggest')
-      await teremock.stop()
     })
 
-    it('utf-8 charset', async () => {
+    test('utf-8 charset', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * Create inline mock with cyrillic letters
       teremock.add({
@@ -490,16 +445,15 @@ describe('teremock puppeteer', () => {
       await page.click('#button')
       await sleep(50)
 
-      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      const text = await page.evaluate(element => element?.textContent, await page.$('#button'))
       expect(text).toBe('200 Строчка на русском языке')
-      await teremock.stop()
     })
 
-    it('remove handler', async () => {
+    test('remove handler', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * Create inline mock
       const remove = teremock.add({
@@ -512,16 +466,15 @@ describe('teremock puppeteer', () => {
       await page.click('#button')
       await sleep(50)
 
-      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      const text = await page.evaluate(element => element?.textContent, await page.$('#button'))
       expect(text).not.toBe('200 teremock.add suggest')
-      await teremock.stop()
     })
 
-    it('ttfb', async () => {
+    test('ttfb', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
 
       // * Create instant inline mock
       teremock.add({
@@ -534,16 +487,15 @@ describe('teremock puppeteer', () => {
 
       // * Awaiting less than initial sleep (30 ms), but more than inline mocked sleep (0 ms)
       await sleep(1)
-      const text = await page.evaluate(element => element.textContent, await page.$('#button'))
+      const text = await page.evaluate(element => element?.textContent, await page.$('#button'))
       expect(text).toBe('200 teremock.add suggest')
-      await teremock.stop()
     })
 
-    it('race condition', async () => {
+    test('race condition', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page })
+      await teremock.start({ page, ci: false })
       teremock.add({
         url: 'http://localhost:3000/api',
         query: { q: 'a' },
@@ -568,24 +520,23 @@ describe('teremock puppeteer', () => {
 
       // * Checking suggest in the div – second respond must return, but not the first
       await sleep(50)
-      const text1 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      const text1 = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
       expect(text1).toBe('200 custom AB')
 
       // * Waiting for the first response – it will overwrite the result of the second response
       // * because of race condition
       await sleep(150)
-      const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      const text2 = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
       expect(text2).toBe('200 custom A')
-      await teremock.stop()
     })
   })
 
-  describe('options.response', () => {
-    it('ttfb as array', async () => {
+  test.describe('options.response', async () => {
+    test('ttfb as array', async ({ page, teremock }) => {
       await page.goto('http://localhost:3000')
 
       // * Starting mocker
-      await teremock.start({ page, responseOverrides: { ttfb: [150, 50] } })
+      await teremock.start({ page, responseOverrides: { ttfb: [150, 50] }, ci: false })
       await teremock.add({ query: { q: 'x' }, response: { body: { suggest: 'x' } } })
       await teremock.add({ query: { q: 'xy' }, response: { body: { suggest: 'xy' } } })
 
@@ -597,21 +548,20 @@ describe('teremock puppeteer', () => {
       await sleep(100)
 
       // * Suggest must have text from the second request
-      const text1 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      const text1 = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
       expect(text1).toBe('200 xy')
 
       // * Wait for the first request (150ms) to be done
       await sleep(100)
 
       // * After the first request is done, text must be just `q`
-      const text2 = await page.evaluate(element => element.textContent, await page.$('#suggest'))
+      const text2 = await page.evaluate(element => element?.textContent, await page.$('#suggest'))
       expect(text2).toBe('200 x')
-      await teremock.stop()
     })
   })
 
-  describe('options.getMockId', () => {
-    it('name as query', async () => {
+  test.describe('options.getMockId', async () => {
+    test('name as query', async ({ page, teremock }) => {
       rimraf.sync(path.resolve(__dirname, '../__teremocks__/custom-mock-id'))
       const mockFilePath = path.resolve(__dirname, '../__teremocks__/custom-mock-id/w.json')
       await page.goto('http://localhost:3000')
@@ -620,6 +570,7 @@ describe('teremock puppeteer', () => {
       // * Starting mocker
       await teremock.start({
         page,
+        ci: false,
         getMockId: ({ url }) => {
           const urlObj = new URL(url)
           const query = urlObj.searchParams.get('q')
@@ -633,8 +584,6 @@ describe('teremock puppeteer', () => {
       await page.keyboard.type('w')
       await sleep(200)
       expect(fs.existsSync(mockFilePath)).toBe(true)
-
-      await teremock.stop()
     })
   })
 })

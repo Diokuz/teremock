@@ -3,9 +3,9 @@
     "url": "http://localhost:3000/api",
     "method": "POST",
     "headers": {
-      "accept": "application/json",
-      "referer": "http://localhost:3000/",
-      "content-type": "application/json"
+      "content-type": "application/json",
+      "origin": "http://localhost:3000",
+      "referer": "http://localhost:3000/"
     },
     "body": {
       "q": "abc"

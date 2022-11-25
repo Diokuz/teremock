@@ -1,0 +1,35 @@
+name: Node.js CI
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: yarn install
+      run: yarn --frozen-lockfile
+    - name: run unit tests
+      run: yarn jest
+    - name: install playwright browsers
+      run: npx playwright install --with-deps
+    - name: run browser tests
+      run: yarn playwright test
+    - name: Archive artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: playwright report
+        path: |
+          test-results
+          playwright-report

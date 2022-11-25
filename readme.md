@@ -4,20 +4,9 @@
 
 ## Do I need teremock?
 
-If you write puppeteer / playwright / karma tests, and you want to mock your network responses easily – probably yes.
+If you write tests using playwright browser engine, and you want to mock your network responses easily – probably yes.
 
-## How to use with playwright (experimental)
-
-```js
-import { Teremock, PlaywrightDriver } from 'teremock'
-
-const teremock = new Teremock({ driver: new PlaywrightDriver({ page }) })
-await teremock.start({ page })
-
-// async stuff which is making requests, including redirects
-```
-
-## How to use with puppeteer
+## How to use
 
 ```js
 import teremock from 'teremock'
@@ -25,27 +14,6 @@ import teremock from 'teremock'
 await teremock.start({ page })
 
 // async stuff which is making requests, including redirects
-```
-
-## How to use with mocha / karma
-
-```js
-// server-side
-import teremock from 'teremock/express/server'
-
-await teremock.listen({
-  app: expressApp,
-  env: { myApi: 'http://example.com/api' },
-})
-
-// client-side
-// make sure, you configured your test app to make request
-// `<test-app-host>/myApi` instead of `http://example.com/api`
-import teremock from 'teremock/express'
-
-await teremock.start()
-
-// async stuff which is making requests, excluding redirects
 ```
 
 ## How it works
@@ -73,11 +41,11 @@ After that line, all request, matched `interceptor`, will be mocked with `interc
 ```js
 mocker.start(options)
 ```
-All options are optional (that's why they called so), except `page` for puppeteer, and `app / env` for express.
+All options are optional (that's why they called so), except `page`.
 
 ```js
 const options = {
-  // Puppeteer options
+  // Playwright option
   page: page,
 
   // Express options
@@ -119,7 +87,7 @@ const options = {
   wd: path.resolve(__dirname, '__teremocks__'),
 
   // Run as CI if true. In CI mode any non-passable request will not go to the real backend
-  // Default is `is-ci` package value (same as in Jest library)
+  // Default is `process.env.CI` value
   ci: false,
 
   // Extends values for any mocked response
@@ -160,7 +128,7 @@ Default value: `*`.
 
 #### interceptor.`resourceTypes` [string]
 
-Comma-separated list of puppeteer [request resource types](https://github.com/puppeteer/puppeteer/blob/master/docs/api.md#requestresourcetype). By default, only `xhr` and `fetch` request are mockable, but there are many situation where you may want to mock html documents, js files and, for example, the whole page of the facebook auth.
+Comma-separated list of playwright [request resource types](https://playwright.dev/docs/api/class-request#request-resource-type). By default, only `xhr` and `fetch` request are mockable, but there are many situation where you may want to mock html documents, js files and, for example, the whole page of the facebook auth.
 
 Default value: `xhr,fetch`.
 
@@ -297,7 +265,7 @@ Both `mocker.start()` and `mocker.stop()` return a `Promise`.
 
 ### mocker.stop()
 
-Stops teremock, removes all handlers from puppeteer, disables request interception.
+Stops teremock, removes all handlers from playwright, disables request interception.
 
 ### mocker.add(interceptor)
 
@@ -351,11 +319,11 @@ teremock:trace http://localhost:3000/api?foo=bar&baz=1 → finish +1ms
 
 ## How to intercept request on a new page (e.g. popup)?
 
-It is not possible right now with puppeteer. Looking forward for https://github.com/puppeteer/puppeteer/issues/443.
+in progress
 
 ## Brief review of mockers
 
-### Puppeteer based mockers
+### Browser based mockers
 
 This type of mockers (which teremock belongs to) could mock any client-side request, including xhr, fetch, script, images, redirect pages. But 1) cannot mock websockets 2) cannot mock server-side request 3) cannot mock initial request of new page.
 

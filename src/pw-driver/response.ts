@@ -1,10 +1,10 @@
 import debug from 'debug'
 import signale from '../logger'
 
-import type { Response as PlaywrightResponse } from 'playwright'
+import type { Response as PlaywrightResponse } from '@playwright/test'
 import type { Request, Response, DriverResponse, Meta, ExtractDriverReqResOptions } from '../types'
 
-const logger = debug('teremock:driver:puppeteer:response')
+const logger = debug('teremock:driver:response')
 
 export async function extractPlaywrightResponse(
   playwrightResponse: PlaywrightResponse,
@@ -15,16 +15,19 @@ export async function extractPlaywrightResponse(
   let requestBody: string | Record<string, any> | null
   let responseBody: string | Record<string, any> | undefined
 
-  if (!options.noParseResponse) {
+  if (options.noParseResponse) {
+    responseBody = ''
+    requestBody = ''
+  } else {
     try {
       responseBody = await playwrightResponse.json()
-    } catch (e) {
+    } catch (e: any) {
       logger('« playwrightResponse.json() error:', e.message)
 
       try {
         responseBody = await playwrightResponse.text()
         logger(`« response body starts with: ${responseBody?.substr(0, 20)}`)
-      } catch (e) {
+      } catch (e: any) {
         logger('« playwrightResponse.text() error:', e.message)
       }
     }
@@ -34,9 +37,6 @@ export async function extractPlaywrightResponse(
     } catch (e) {
       requestBody = playwrightRequest.postData()
     }
-  } else {
-    responseBody = ''
-    requestBody = ''
   }
 
   // @ts-expect-error

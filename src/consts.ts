@@ -1,5 +1,6 @@
 import path from 'path'
-import isCi from 'is-ci'
+// @ts-ignore
+import { isCi } from 'ci-info'
 import getMockId from './mock-id'
 
 import type { Options, Interceptor } from './types'
@@ -44,9 +45,10 @@ export const DEFAULT_OPTIONS: Options = {
   ],
   skipRequestHeaders: [
     'user-agent',
+    'accept-language',
+    'accept',
   ],
-  // https://github.com/facebook/jest/blob/c6512ad1b32a5d22aab9937300aa61aa87f76a27/packages/jest-cli/src/cli/args.js#L128
-  ci: isCi, // Same behaviour as in Jest
+  ci: isCi,
   awaitConnectionsOnStop: false,
   getMockId,
   // You need default value, or next teremock.start() (without options.wd) will use old wd value

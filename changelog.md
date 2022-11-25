@@ -1,3 +1,11 @@
+## 2.0.0
+
+- Playwright driver by default
+- Drop express and puppeteer drivers
+- Fixed bug with `request.body: null` accounted for mockId
+- Remove page.onClose handler (no autostop on page close)
+- Remove esm/type module (back to commonjs)
+
 ## 1.10.3
 
 - Add debug log for all matched request at `stop()`

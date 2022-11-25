@@ -1,7 +1,7 @@
 import debug from 'debug'
 import { loggerTrace } from '../utils'
 
-import type { Route } from 'playwright'
+import type { Route } from '@playwright/test'
 import type {
   Request,
   Response,
@@ -11,7 +11,7 @@ import type {
   ExtractDriverReqResOptions,
 } from '../types'
 
-const logger = debug('teremock:driver:puppeteer:request')
+const logger = debug('teremock:driver:request')
 
 let requestsCounter: number = 0
 

@@ -7,7 +7,7 @@ import { loggerTrace, getTimeStampWithStrictOrder } from '../utils'
 import { URL } from 'url'
 
 import type { Driver, OnRequestHandler, OnResponseHandler } from '../types'
-import type { Response, Route, Page } from 'playwright'
+import type { Response, Route, Page } from '@playwright/test'
 
 /**
  * There is no valid reason to have more than one driver instances per page
@@ -22,7 +22,7 @@ class PlaywrightDriver implements Driver {
   private seenRedirects: Map<string, number>
   private _routeUrl = () => true
 
-  constructor({ page, noParseResponseUrls = [] }: { page: Page, noParseResponseUrls?: string[] }) {
+  constructor({ page, noParseResponseUrls = [] }: { page: Page; noParseResponseUrls?: string[] }) {
     logger.debug(`instantiating new playwright driver`)
 
     if (!page) {
@@ -66,7 +66,7 @@ class PlaywrightDriver implements Driver {
       pagesSet.delete(this.page)
       try {
         await this.page.unroute(this._routeUrl, handler)
-      } catch (e) {
+      } catch (e: any) {
         if (e.message.indexOf('has been closed') === -1) {
           throw e
         }
@@ -96,24 +96,20 @@ class PlaywrightDriver implements Driver {
 
       loggerTrace(`${url} → page.on('response') fired`)
 
-      await fn(await extractPlaywrightResponse(interceptedResponse, {
-        ...timestampWithOrder,
-        noParseResponse
-      }))
+      await fn(
+        await extractPlaywrightResponse(interceptedResponse, {
+          ...timestampWithOrder,
+          noParseResponse,
+        })
+      )
 
       loggerTrace(`${url} → finish`)
     }
 
-    // Intercepting all requests and respinding with mocks
+    // Intercepting all requests and responding with mocks
     await this.page.on('response', handler)
 
     return () => this.page.off('response', handler)
-  }
-
-  public onClose(fn: (page: Page) => void): () => unknown {
-    this.page.on('close', fn)
-
-    return () => this.page.off('close', fn)
   }
 }
 
