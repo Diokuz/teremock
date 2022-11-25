@@ -1,6 +1,6 @@
 {
   "name": "teremock",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "description": "File-based real mocks request mocker for playwright",
   "repository": {
     "type": "git",
