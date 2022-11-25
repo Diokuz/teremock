@@ -12,7 +12,9 @@ jobs:
         with:
           node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
-      - run: npx tsc
+      - name: yarn install
+        run: yarn --frozen-lockfile
+      - run: yarn tsc
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
