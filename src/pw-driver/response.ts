@@ -65,7 +65,7 @@ export async function extractPlaywrightResponse(
 
   logger(`got the response, sending it to teremock core`)
 
-  const { __meta } = (playwrightRequest as unknown) as { __meta?: Meta }
+  const { __meta } = playwrightRequest as unknown as { __meta?: Meta }
 
   if (!__meta) {
     signale.warn(`__meta was not found in playwrightRequest. Probably it was made before teremock.start()`)
