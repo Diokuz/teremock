@@ -22,3 +22,5 @@ contributing.md
 jest.config.js
 tsconfig.json
 .yarnrc
+/src
+/dist

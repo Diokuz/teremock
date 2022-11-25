@@ -3,8 +3,7 @@ import path from 'path'
 import { expect, test as base } from '@playwright/test'
 import rimraf from 'rimraf'
 import sinon from 'sinon'
-import { Teremock } from '../src'
-import { parseUrl } from '../src/utils'
+import { Teremock, parseUrl } from '../index'
 
 import type { Request } from '../src/types'
 

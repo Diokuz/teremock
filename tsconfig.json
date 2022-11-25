@@ -7,7 +7,7 @@
     "outDir": "./dist",
     "rootDir": "src",
     "moduleResolution": "node",
-    "module": "CommonJS",
+    "module": "ES2020",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "sourceMap": false,
