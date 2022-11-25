@@ -1,7 +1,7 @@
 .PHONY: ts
 ts:
 	rm -r dist || true
-	yarn tsc
+	npm run build
 
 .PHONY: pretty-write
 pretty-write:

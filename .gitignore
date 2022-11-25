@@ -13,3 +13,5 @@ dist
 .yarnrc
 /test-results
 /playwright-report
+*.d.ts
+/index.js

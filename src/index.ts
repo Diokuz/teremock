@@ -7,3 +7,4 @@ export { Teremock, PlaywrightDriver }
 export default teremock
 
 export * from './types'
+export * from './utils'
