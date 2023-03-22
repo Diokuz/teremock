@@ -3,7 +3,7 @@ import path from 'path'
 import { expect, test as base } from '@playwright/test'
 import rimraf from 'rimraf'
 import sinon from 'sinon'
-import { Teremock, parseUrl } from '../index'
+import { parseUrl, Teremock, UserInterceptor } from '../index'
 
 import type { Request } from '../src/types'
 
@@ -14,7 +14,7 @@ async function sleep(time: number): Promise<void> {
 }
 
 const test = base.extend<{ teremock: Teremock }, { cleanup: void }>({
-  teremock: async ({ page }, use) => {
+  teremock: async ({ page: _page }, use) => {
     const teremock = new Teremock()
     await use(teremock)
     await teremock.stop()
@@ -233,6 +233,56 @@ test.describe('teremock puppeteer', async () => {
       // console.log('storage.set.getCall(0).args[0]', storage.set.getCall(0).args[0])
       expect(storage.set.calledOnce).toBe(true)
       expect((storage.set.getCall(0).args as any[])[0]).toBe('some_name--get-q-click')
+      await teremock.stop()
+    })
+
+    test('capture GET request for /api and extend response', async ({ page }) => {
+      await page.goto('http://localhost:3000')
+
+      const interceptors: Record<string, UserInterceptor> = {
+        some_name: {
+          methods: new Set(['*']),
+          resourceTypes: new Set(['*']),
+          pass: false,
+          url: '/api',
+          response: async (_, res) => {
+            if (!res) {
+              return {}
+            }
+
+            return {
+              body: {
+                ...res.body,
+                suggest: [res.body?.suggest, 'one more suggest'],
+              },
+            }
+          },
+        },
+      }
+
+      // * Starting mocker with wildcard interceptor
+      // @ts-ignore
+      const teremock = new Teremock()
+      await teremock.start({ page, interceptors, ci: false })
+
+      // * Invoking GET request to `/api`
+      await page.click('#button')
+      await sleep(100)
+
+      const text = await page.evaluate((element) => element?.textContent, await page.$('#button'))
+
+      // before mock we can't modify response. Check base response
+      expect(text).toBe('200 click')
+
+      // * Invoking GET request to `/api`
+      await page.click('#button')
+      await sleep(100)
+
+
+      const textAfterMock = await page.evaluate((element) => element?.textContent, await page.$('#button'))
+
+      expect(textAfterMock).toBe('200 click,one more suggest')
+
       await teremock.stop()
     })
 
