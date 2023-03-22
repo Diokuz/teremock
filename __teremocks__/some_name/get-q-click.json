@@ -1,0 +1,24 @@
+{
+  "request": {
+    "url": "http://localhost:3000/api?q=click",
+    "method": "GET",
+    "headers": {
+      "referer": "http://localhost:3000/"
+    },
+    "body": null,
+    "resourceType": "fetch"
+  },
+  "response": {
+    "url": "http://localhost:3000/api?q=click",
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "access-control-allow-origin": "*",
+      "connection": "keep-alive",
+      "keep-alive": "timeout=5"
+    },
+    "body": {
+      "suggest": "click"
+    }
+  }
+}
