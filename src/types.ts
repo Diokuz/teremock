@@ -39,7 +39,7 @@ export interface GetMockIdParams {
   headers?: Headers
 }
 
-export type ResponseFunc = (req: ArgRequest) => Promise<Partial<Response>>
+export type ResponseFunc = (req: ArgRequest, mockedResponse?: Response) => Promise<Partial<Response>>
 export type DefResponse = Partial<Response> | ResponseFunc
 
 type ListItem = string | string[]
