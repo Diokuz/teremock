@@ -47,6 +47,8 @@ export default function createHandler(initialParams: Params) {
     const mockId = getMockId({ ...request, naming, name: interceptor.name, body: getBody(request.body) })
     const mockExist: boolean = await storage.has(mockId)
     const hasResp = !!interceptor.response
+    const needMockInResponseFn =
+      hasResp && typeof interceptor.response === 'function' && interceptor.response.length === 2
     const mog = debug(`teremock:${mockId}`)
 
     /**
@@ -58,7 +60,7 @@ export default function createHandler(initialParams: Params) {
     } else if (mockExist) {
       loggerTrace(`${request.url} → mock already exists`)
       mog(`« mock was not stored because it exists`)
-    } else if (hasResp) {
+    } else if (hasResp && !needMockInResponseFn) {
       loggerTrace(`${request.url} → interceptor.response is defined`)
       mog(`« mock was not stored because matched interceptor have response property`)
     } else if (interceptor.pass) {

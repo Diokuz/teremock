@@ -25,6 +25,7 @@ export interface BeforeRespondArg {
   respond: (response: Response, interceptor: Interceptor) => Promise<void>
   request: Request
   response: DefResponse
+  mockedResponse?: Response
   responseOverrides?: Partial<Response>
   interceptor: Interceptor
   mog: Function
@@ -35,6 +36,7 @@ async function beforeRespond({
   respond,
   request,
   response,
+  mockedResponse,
   mog,
   interceptor,
   increment,
@@ -48,7 +50,7 @@ async function beforeRespond({
       query: getQuery(request.url),
     }
     mog(`» response is a function, responding with its returns`)
-    partResp = await response(argRequest)
+    partResp = await response(argRequest, mockedResponse)
     mog(`» response() returns`, partResp)
   } else {
     partResp = response
@@ -130,7 +132,33 @@ export default function createHandler(initialParams: Params) {
     reqSet.add(mockId)
     mog('» reqSet is', Array.from(reqSet.get()))
 
-    if (interceptor.response) {
+    // mocks from storage
+    mog(`» trying to get mock with id "${mockId}"`)
+
+    if (await storage.has(mockId)) {
+      mog(`» mock "${mockId}" exists!`)
+
+      const mock = await storage.get(mockId)
+
+      loggerTrace(`${request.url} ← mock ${mockId} found in storage`)
+      mog(`» successfully read from "${mockId}", responding`)
+
+      await beforeRespond({
+        request,
+        response: interceptor.response || mock.response,
+        mockedResponse: mock.response,
+        responseOverrides,
+        respond,
+        interceptor,
+        mog,
+        increment,
+      })
+
+      return
+    }
+
+    const needMockInResponseFn = typeof interceptor.response === 'function' && interceptor.response.length === 2
+    if (interceptor.response && !needMockInResponseFn) {
       loggerTrace(`${request.url} ← inline response`)
       mog(`» interceptor.response defined, responding with it`)
 
@@ -147,37 +175,14 @@ export default function createHandler(initialParams: Params) {
       return
     }
 
-    // mocks from storage
+    loggerTrace(`${request.url} ← mock not found in storage`)
+    mog(`» mock does not exist!`, ci)
 
-    mog(`» trying to get mock with id "${mockId}"`)
-
-    if (await storage.has(mockId)) {
-      mog(`» mock "${mockId}" exists!`)
-
-      const mock = await storage.get(mockId)
-
-      loggerTrace(`${request.url} ← mock ${mockId} found in storage`)
-      mog(`» successfully read from "${mockId}", responding`)
-
-      await beforeRespond({
-        request,
-        response: mock.response,
-        responseOverrides,
-        respond,
-        interceptor,
-        mog,
-        increment,
-      })
+    if (ci) {
+      signale.warn(`mock file not found in ci mode, url is "${request.url}"`)
     } else {
-      loggerTrace(`${request.url} ← mock not found in storage`)
-      mog(`» mock does not exist!`, ci)
-
-      if (ci) {
-        signale.warn(`mock file not found in ci mode, url is "${request.url}"`)
-      } else {
-        mog('» about to next()...')
-        await next(interceptor)
-      }
+      mog('» about to next()...')
+      await next(interceptor)
     }
   }
 }

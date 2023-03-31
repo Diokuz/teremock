@@ -8,3 +8,5 @@ export default teremock
 
 export * from './types'
 export * from './utils'
+export { default as getMockId } from './mock-id'
+export { default as getRequestId } from './request-id'
